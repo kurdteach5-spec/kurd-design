@@ -1582,6 +1582,10 @@ const strings: Record<string, string> = {
   "layers selected": "طبقات محددة",
   "· about": "· حول",
   "· edit in viewer": "· تعديل في العارض",
-  "· with audio": "· مع الصوت"
+  "· with audio": "· مع الصوت",
+  "Auto-Key": "إطار تلقائي",
+  "Auto-Keyframe": "الإطار المفتاحي التلقائي",
+  "Auto-Keyframe is on: every change records a keyframe (Alt+Shift+K)": "الإطار المفتاحي التلقائي مفعّل: كل تغيير يسجّل إطارًا مفتاحيًا (Alt+Shift+K)",
+  "Auto-Keyframe is off: click the stopwatch to animate a property (Alt+Shift+K)": "الإطار المفتاحي التلقائي متوقف: انقر ساعة الإيقاف لتحريك خاصية (Alt+Shift+K)"
 };
 export default strings;

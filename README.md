@@ -28,6 +28,10 @@ Text layers support Kurdish and Arabic writing (right-to-left lines, joined lett
 
 Translations live in `src/i18n/ckb.ts` and `src/i18n/ar.ts` (English text → translation). See `src/i18n/index.ts` for how they are applied.
 
+## Works on any screen
+
+The layout adapts to the window's width and height: on laptops and desktops all panels are docked; on tablets and phones the side panels open as drawers (the Panels / Project / Properties buttons), menus and toolbars scroll sideways, and the timeline height follows the screen height (drag its top edge to resize).
+
 ## Editable text and smart objects
 
 - **Edit text any time**: double-click a text layer on the canvas (Move or Type tool) or its thumbnail in the Layers panel, use Layer › Edit Text, or change the words in the **Text** box in the Properties panel.
@@ -42,7 +46,7 @@ Click **Motion** at the top to switch from photo editing to the motion-graphics 
 - **Compositions**: presets 1920×1080, 1080×1920, 1080×1350, 1080×1080, 3840×2160 or custom; 24/25/30/50/60 fps; duration, background color, motion-blur shutter. Several compositions in tabs; nest one in another (pre-compose, double-click to enter).
 - **Layers**: video (MP4/MOV/WebM), image, audio, text, shapes (rectangle, rounded rectangle, ellipse, polygon, star, line, arrow, pen path), solid, null, adjustment, pre-comp and 2D/3D camera. Visibility, lock, solo, shy, parenting, blend modes, 3D, motion blur, in/out points, trim, split (Ctrl+Shift+D), duplicate, speed.
 - **Timeline**: play/pause/stop/loop (Space), frame step (Page Up/Down), zoom and scroll, snapping, markers (*), work area (B/N), keyframe rows for every property.
-- **Keyframes**: click the stopwatch next to any property, then change values at another time. Select, box-select, drag, copy/paste, duplicate, delete. Linear, hold, Easy Ease (F9), ease in/out, bezier; the **Graph Editor** (Shift+F3) edits speed curves with handles. Position keyframes draw an editable motion path in the viewer.
+- **Keyframes**: click the stopwatch next to any property, then change values at another time — a new keyframe is added automatically. With **Auto-Key** on (red button in the timeline, Alt+Shift+K) you don't even need the stopwatch: moving, scaling, rotating or changing any value records keyframes by itself. Select, box-select, drag, copy/paste, duplicate, delete. Linear, hold, Easy Ease (F9), ease in/out, bezier; the **Graph Editor** (Shift+F3) edits speed curves with handles. Position keyframes draw an editable motion path in the viewer.
 - **Masks**: rectangle, ellipse and pen masks on any layer; add/subtract/intersect, feather, opacity, expansion, invert — all animatable.
 - **Effects** (Effect menu or Effects & Presets panel): blur, color correction, distortion, glow, stylize, noise, sharpen, transform, keying (Chroma Key for green screen with spill suppression and matte view), shadow. Every parameter can be keyframed.
 - **Presets**: text (fade, slide, scale, typewriter, character/word reveal, bounce, pop, blur, glitch), logo, shape, transitions, glitch, cinematic, minimal, modern and broadcast (lower third, title card, news ticker). They create normal keyframes you can edit; save your own animation as a preset.

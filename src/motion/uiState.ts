@@ -11,6 +11,8 @@ export interface MotionUI {
   leftTab: 'project' | 'effects';
   rightTab: 'properties' | 'render';
   timelineHeight: number;
+  /** on narrow screens, the side panel shown over the viewer */
+  drawer: 'left' | 'right' | null;
   /** text layer being edited on the canvas */
   editingText: string | null;
   showGrid: boolean;
@@ -24,7 +26,7 @@ export interface MotionUI {
 const saved = (() => { try { return JSON.parse(localStorage.getItem('kurd-motion-ui') || '{}') as Partial<MotionUI>; } catch { return {}; } })();
 
 export const useMotionUI = create<MotionUI>(() => ({
-  dialog: null, leftTab: 'project', rightTab: 'properties', timelineHeight: saved.timelineHeight ?? 320, editingText: null,
+  dialog: null, leftTab: 'project', rightTab: 'properties', timelineHeight: saved.timelineHeight ?? Math.round(Math.max(200, Math.min(380, window.innerHeight * 0.36))), drawer: null, editingText: null,
   showGrid: false, showSafe: false, showPaths: true, checker: false, lastRender: null,
 }));
 useMotionUI.subscribe((s, p) => { if (s.timelineHeight !== p.timelineHeight) { try { localStorage.setItem('kurd-motion-ui', JSON.stringify({ timelineHeight: s.timelineHeight })); } catch { /* ignore */ } } });

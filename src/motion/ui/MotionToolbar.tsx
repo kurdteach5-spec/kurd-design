@@ -29,7 +29,7 @@ export function MotionToolbar() {
   const label = useMotion((s) => s.label);
   const drawTool = tool === 'rect' || tool === 'ellipse' || tool === 'polygon' || tool === 'star' || tool === 'pen';
   return (
-    <div className="h-full flex items-center gap-0.5 px-2 min-w-0 overflow-x-auto" role="toolbar" aria-label="Motion tools">
+    <div className="h-full flex items-center gap-0.5 px-2 min-w-0 overflow-x-auto overflow-y-hidden no-scrollbar" role="toolbar" aria-label="Motion tools">
       {TOOLS.map((t) => {
         const sc = MCOMMANDS.get(t.cmd)?.shortcut;
         const Icon = t.icon;

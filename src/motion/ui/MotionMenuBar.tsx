@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { MCOMMANDS, EFFECT_MENU, runM } from '../commands';
 import { formatShortcut } from '../../shortcuts/commands';
+import { Floating } from '../../components/ui/Floating';
 import { LuCheck, LuChevronRight } from 'react-icons/lu';
 import { useMotion } from '../store';
 
@@ -19,6 +20,7 @@ const MENUS: { label: string; items: Entry[] }[] = [
   ] },
   { label: 'Effect', items: ['m.removeEffects', '-', ...EFFECT_MENU] },
   { label: 'Animation', items: [
+    'm.autoKey', '-',
     { label: 'Keyframe Interpolation', items: ['m.linear', 'm.easy', 'm.easeIn', 'm.easeOut', 'm.hold'] },
     'm.autoBezier', 'm.linearPath', '-', 'm.selectKeys', 'm.revealTransform', 'm.revealAll', '-', 'm.fadeIn', 'm.fadeOut', 'm.savePreset', '-', 'm.prevKey', 'm.nextKey',
   ] },
@@ -30,6 +32,7 @@ function MenuList({ items, onDone, depth = 0 }: { items: Entry[]; onDone: () => 
   const [active, setActive] = useState(-1);
   const [sub, setSub] = useState<number | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const itemEls = useRef<(HTMLDivElement | null)[]>([]);
   useMotion((s) => s.version); // refresh enabled/checked states
   useEffect(() => { if (depth === 0) ref.current?.focus(); }, [depth]);
   const actionable = items.map((e, i) => (e === '-' ? -1 : i)).filter((i) => i >= 0);
@@ -39,7 +42,7 @@ function MenuList({ items, onDone, depth = 0 }: { items: Entry[]; onDone: () => 
     else if (typeof e === 'object') setSub(i);
   };
   return (
-    <div ref={ref} className="menu max-h-[80vh] overflow-y-auto" role="menu" tabIndex={-1}
+    <div ref={ref} className="menu" role="menu" tabIndex={-1}
       onKeyDown={(e) => {
         if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); e.stopPropagation(); const pos = actionable.indexOf(active); const n = actionable.length; setActive(actionable[(pos + (e.key === 'ArrowDown' ? 1 : -1) + n) % n]); setSub(null); }
         else if (e.key === 'Enter' || (e.key === 'ArrowRight' && typeof items[active] === 'object')) { e.preventDefault(); e.stopPropagation(); if (active >= 0) activate(active); }
@@ -48,9 +51,9 @@ function MenuList({ items, onDone, depth = 0 }: { items: Entry[]; onDone: () => 
         if (e === '-') return <div key={i} className="menu-sep" role="separator" />;
         if (typeof e === 'object') {
           return (
-            <div key={i} className="relative" onMouseEnter={() => { setActive(i); setSub(i); }}>
+            <div key={i} className="relative" ref={(el: HTMLDivElement | null) => { itemEls.current[i] = el; }} onMouseEnter={() => { setActive(i); setSub(i); }} onClick={() => setSub(i)}>
               <div className="menu-item" role="menuitem" aria-haspopup="menu" aria-expanded={sub === i} data-active={active === i}><span className="w-3.5" /><span className="flex-1">{e.label}</span><LuChevronRight size={13} /></div>
-              {sub === i && <div className="absolute start-full -top-1 ms-0.5 z-10"><MenuList items={e.items} onDone={onDone} depth={depth + 1} /></div>}
+              {sub === i && <Floating side="side" getAnchor={() => itemEls.current[i]}><MenuList items={e.items} onDone={onDone} depth={depth + 1} /></Floating>}
             </div>
           );
         }
@@ -73,6 +76,7 @@ function MenuList({ items, onDone, depth = 0 }: { items: Entry[]; onDone: () => 
 export function MotionMenuBar() {
   const [open, setOpen] = useState<number | null>(null);
   const bar = useRef<HTMLDivElement>(null);
+  const btns = useRef<(HTMLButtonElement | null)[]>([]);
   useEffect(() => {
     if (open === null) return;
     const down = (e: PointerEvent) => { if (!bar.current?.contains(e.target as Node)) setOpen(null); };
@@ -88,12 +92,12 @@ export function MotionMenuBar() {
     <div ref={bar} className="flex items-center h-full" role="menubar" aria-label="Motion menu">
       {MENUS.map((m, i) => (
         <div key={m.label} className="relative h-full">
-          <button type="button" role="menuitem" aria-haspopup="menu" aria-expanded={open === i}
-            className={`h-full px-2.5 rounded-[4px] ${open === i ? 'bg-hover text-ink-strong' : 'text-ink hover:bg-hover'}`}
+          <button type="button" role="menuitem" aria-haspopup="menu" aria-expanded={open === i} ref={(el: HTMLButtonElement | null) => { btns.current[i] = el; }}
+            className={`h-full px-2.5 rounded-[4px] whitespace-nowrap ${open === i ? 'bg-hover text-ink-strong' : 'text-ink hover:bg-hover'}`}
             onPointerDown={(e) => { e.preventDefault(); setOpen(open === i ? null : i); }}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); setOpen(i); } }}
             onMouseEnter={() => { if (open !== null) setOpen(i); }}>{m.label}</button>
-          {open === i && <div className="absolute start-0 top-full mt-0.5 z-50"><MenuList items={m.items} onDone={() => setOpen(null)} /></div>}
+          {open === i && <Floating side="below" getAnchor={() => btns.current[i]}><MenuList items={m.items} onDone={() => setOpen(null)} /></Floating>}
         </div>
       ))}
     </div>

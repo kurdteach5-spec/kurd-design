@@ -1582,6 +1582,10 @@ const strings: Record<string, string> = {
   "layers selected": "لەیەر دیاریکراوە",
   "· about": "· دەربارە",
   "· edit in viewer": "· دەستکاری لە بینەردا",
-  "· with audio": "· لەگەڵ دەنگ"
+  "· with audio": "· لەگەڵ دەنگ",
+  "Auto-Key": "کیفرەیمی خۆکار",
+  "Auto-Keyframe": "کیفرەیمی خۆکار",
+  "Auto-Keyframe is on: every change records a keyframe (Alt+Shift+K)": "کیفرەیمی خۆکار چالاکە: هەر گۆڕانکارییەک کیفرەیمێک تۆمار دەکات (Alt+Shift+K)",
+  "Auto-Keyframe is off: click the stopwatch to animate a property (Alt+Shift+K)": "کیفرەیمی خۆکار ناچالاکە: کلیک لە کاتژمێری وەستان بکە بۆ ئەنیمەیتکردنی تایبەتمەندییەک (Alt+Shift+K)"
 };
 export default strings;

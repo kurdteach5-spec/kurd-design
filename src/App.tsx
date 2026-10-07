@@ -56,24 +56,24 @@ export function App() {
   }, []);
 
   return (
-    <div className="h-full grid" style={{ gridTemplateRows: '32px 36px 1fr 24px' }}>
-      <header className="flex items-center gap-2 px-2 bg-panel border-b border-line">
-        <button type="button" className="flex items-center gap-2 pe-2 shrink-0" onClick={() => useUI.setState({ showHome: true })} aria-label="KURD DESIGN home" data-tip="Home">
-          <Logo size={20} /><span className="font-bold text-ink-strong hidden sm:inline tracking-[0.06em]">KURD <span className="text-accent">DESIGN</span></span>
+    <div className="h-full grid" style={{ gridTemplateRows: '32px 36px minmax(0, 1fr) 24px', gridTemplateColumns: 'minmax(0, 1fr)' }}>
+      <header className="flex items-center gap-1 sm:gap-2 px-1.5 sm:px-2 bg-panel border-b border-line min-w-0 overflow-hidden">
+        <button type="button" className="flex items-center gap-2 pe-1 xl:pe-2 shrink-0" onClick={() => useUI.setState({ showHome: true })} aria-label="KURD DESIGN home" data-tip="Home">
+          <Logo size={20} /><span className="font-bold text-ink-strong hidden xl:inline tracking-[0.06em] whitespace-nowrap">KURD <span className="text-accent">DESIGN</span></span>
         </button>
         <div className="flex items-center rounded-[6px] border border-line overflow-hidden shrink-0 mx-1" role="radiogroup" aria-label="Workspace">
-          <button type="button" role="radio" aria-checked={mode === 'design'} className={`h-[24px] px-2.5 text-xs inline-flex items-center gap-1.5 ${mode === 'design' ? 'bg-accent text-white' : 'text-muted hover:text-ink hover:bg-hover'}`} onClick={() => { pauseMotion(); setWorkspace('design'); }} data-tip="Photo editing & graphic design"><LuImage size={13} />Design</button>
-          <button type="button" role="radio" aria-checked={mode === 'motion'} className={`h-[24px] px-2.5 text-xs inline-flex items-center gap-1.5 ${mode === 'motion' ? 'bg-accent text-white' : 'text-muted hover:text-ink hover:bg-hover'}`} onClick={() => setWorkspace('motion')} data-tip="Motion graphics, animation & video"><LuClapperboard size={13} />Motion</button>
+          <button type="button" role="radio" aria-checked={mode === 'design'} aria-label="Design" className={`h-[24px] px-2 sm:px-2.5 text-xs inline-flex items-center gap-1.5 ${mode === 'design' ? 'bg-accent text-white' : 'text-muted hover:text-ink hover:bg-hover'}`} onClick={() => { pauseMotion(); setWorkspace('design'); }} data-tip="Photo editing & graphic design"><LuImage size={13} /><span className="hidden sm:inline">Design</span></button>
+          <button type="button" role="radio" aria-checked={mode === 'motion'} aria-label="Motion" className={`h-[24px] px-2 sm:px-2.5 text-xs inline-flex items-center gap-1.5 ${mode === 'motion' ? 'bg-accent text-white' : 'text-muted hover:text-ink hover:bg-hover'}`} onClick={() => setWorkspace('motion')} data-tip="Motion graphics, animation & video"><LuClapperboard size={13} /><span className="hidden sm:inline">Motion</span></button>
         </div>
-        <div className="h-full py-[3px] min-w-0">{mode === 'motion' ? <MotionMenuBar /> : <MenuBar />}</div>
-        <div className="ms-auto h-full shrink-0"><LanguageMenu /></div>
+        <div className="h-full py-[3px] min-w-0 flex-1 overflow-x-auto overflow-y-hidden no-scrollbar">{mode === 'motion' ? <MotionMenuBar /> : <MenuBar />}</div>
+        <div className="h-full shrink-0"><LanguageMenu /></div>
       </header>
       {mode === 'motion' ? <div className="min-h-0 min-w-0" style={{ gridRow: '2 / 5' }}><MotionWorkspace /></div> : <>
-      <div className="bg-panel border-b border-line min-w-0">
+      <div className="bg-panel border-b border-line min-w-0 overflow-x-auto overflow-y-hidden no-scrollbar">
         {home ? <div className="h-full flex items-center px-3 text-muted">Create or open a document to start editing.</div> : <ErrorBoundary label="options bar"><OptionsBar /></ErrorBoundary>}
       </div>
       <main className="flex min-h-0 min-w-0">
-        <div className="w-[42px] shrink-0 bg-panel border-e border-line"><Toolbox /></div>
+        <div className="w-[42px] shrink-0 bg-panel border-e border-line min-h-0"><Toolbox /></div>
         <div className="flex-1 min-w-0 flex flex-col">
           <div className="h-[30px] shrink-0 bg-panel border-b border-line px-1 flex items-end"><DocumentTabs /></div>
           {!home && <SmartContentsBar />}
@@ -84,7 +84,7 @@ export function App() {
         </div>
         <ErrorBoundary label="panels"><Sidebar /></ErrorBoundary>
       </main>
-      <footer className="bg-panel border-t border-line min-w-0"><StatusBar /></footer>
+      <footer className="bg-panel border-t border-line min-w-0 overflow-hidden"><StatusBar /></footer>
       </>}
       <DialogHost />
       <Toasts />

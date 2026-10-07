@@ -24,21 +24,22 @@ export function ScrubNumber({ value, onChange, step = 1, min = -Infinity, max = 
   }
   return (
     <span role="spinbutton" aria-label={label} aria-valuenow={value} tabIndex={disabled ? -1 : 0}
-      className={`num inline-block text-xs select-none whitespace-nowrap ${disabled ? 'text-faint' : 'text-[#7fb2ff] cursor-ew-resize hover:underline'}`}
+      className={`num inline-block text-xs select-none whitespace-nowrap touch-none ${disabled ? 'text-faint' : 'text-[#7fb2ff] cursor-ew-resize hover:underline'}`}
       style={{ minWidth: width ? undefined : 28 }}
       onKeyDown={(e) => { if (e.key === 'Enter') setEditing(String(round(value, step))); if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); e.stopPropagation(); onChange(clamp(value + (e.key === 'ArrowUp' ? 1 : -1) * step * (e.shiftKey ? 10 : 1)), true); } }}
       onPointerDown={(e) => {
         if (disabled || e.button !== 0) return;
         e.preventDefault(); e.stopPropagation();
         const el = e.currentTarget; el.setPointerCapture(e.pointerId);
-        const x0 = e.clientX, v0 = value; moved.current = false;
+        const x0 = e.clientX, v0 = value; moved.current = false; let last = value;
         const move = (ev: PointerEvent) => {
           const dx = ev.clientX - x0; if (Math.abs(dx) > 2) moved.current = true;
           if (!moved.current) return;
           const k = ev.shiftKey ? 10 : ev.altKey ? 0.1 : 1;
-          onChange(clamp(round(v0 + dx * step * k, step * (ev.altKey ? 0.1 : 1))), false);
+          last = clamp(round(v0 + dx * step * k, step * (ev.altKey ? 0.1 : 1)));
+          onChange(last, false);
         };
-        const up = () => { el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); if (!moved.current) setEditing(String(round(value, step))); else onChange(value, true); };
+        const up = () => { el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); if (!moved.current) setEditing(String(round(value, step))); else onChange(last, true); };
         el.addEventListener('pointermove', move); el.addEventListener('pointerup', up);
       }}>
       {round(value, step)}{unit ? <span className="text-faint">{unit === '%' || unit === '°' ? unit : ` ${unit}`}</span> : null}

@@ -451,7 +451,7 @@ export function Viewer() {
   return (
     <div className="h-full flex flex-col min-h-0">
       <CompTabs />
-      <div ref={box} className="relative flex-1 min-h-0 overflow-hidden bg-[#141619]" style={{ cursor }}
+      <div ref={box} className="relative flex-1 min-h-0 overflow-hidden bg-[#141619] touch-none" style={{ cursor }}
         onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
         onDoubleClick={(e) => {
           const r = box.current!.getBoundingClientRect(); const p = toComp(e.clientX - r.left, e.clientY - r.top);
@@ -549,29 +549,29 @@ function PreviewBar({ comp, t, zoom }: { comp: Composition; t: number; zoom: num
     <button type="button" className={`icon-btn ${on ? '!text-accent' : ''}`} aria-label={label} data-tip={label} aria-pressed={on} onClick={onClick}>{children}</button>
   );
   return (
-    <div className="h-9 shrink-0 flex items-center gap-1 px-2 bg-panel border-t border-line">
+    <div className="h-9 shrink-0 flex items-center gap-1 px-2 bg-panel border-t border-line overflow-x-auto overflow-y-hidden no-scrollbar">
       <Btn label="Go to start (Home)" onClick={A.goToStart}><LuSkipBack size={15} /></Btn>
       <Btn label="Previous frame (Page Up)" onClick={() => A.stepFrames(-1)}><LuStepBack size={15} /></Btn>
-      <button type="button" className="h-7 w-9 rounded-[5px] bg-accent text-white flex items-center justify-center" aria-label={playing ? 'Pause (Space)' : 'Play (Space)'} data-tip={playing ? 'Pause (Space)' : 'Play (Space)'} onClick={togglePlay}>{playing ? <LuPause size={16} /> : <LuPlay size={16} />}</button>
+      <button type="button" className="h-7 w-9 shrink-0 rounded-[5px] bg-accent text-white flex items-center justify-center" aria-label={playing ? 'Pause (Space)' : 'Play (Space)'} data-tip={playing ? 'Pause (Space)' : 'Play (Space)'} onClick={togglePlay}>{playing ? <LuPause size={16} /> : <LuPlay size={16} />}</button>
       <Btn label="Stop" onClick={stop}><LuSquare size={13} /></Btn>
       <Btn label="Next frame (Page Down)" onClick={() => A.stepFrames(1)}><LuStepForward size={15} /></Btn>
       <Btn label="Go to end (End)" onClick={A.goToEnd}><LuSkipForward size={15} /></Btn>
       <Btn label="Loop" on={loop} onClick={() => useMotion.setState({ loop: !loop })}><LuRepeat size={14} /></Btn>
-      <span className="num text-xs text-accent ms-2 w-[84px]">{formatTimecode(t, comp.fps)}</span>
-      <div className="flex-1" />
-      <label className="flex items-center gap-1.5 text-xs text-muted">Quality
+      <span className="num text-xs text-accent ms-2 w-[84px] shrink-0 hidden sm:inline">{formatTimecode(t, comp.fps)}</span>
+      <div className="flex-1 min-w-[8px]" />
+      <label className="flex items-center gap-1.5 text-xs text-muted shrink-0"><span className="hidden md:inline">Quality</span>
         <select className="field h-[22px] text-xs" value={String(quality)} aria-label="Preview quality" onChange={(e) => useMotion.setState({ quality: Number(e.target.value) as 1 | 0.5 | 0.25 })}>
           <option value="1">Full</option><option value="0.5">Half</option><option value="0.25">Quarter</option>
         </select>
       </label>
-      <label className="flex items-center gap-1.5 text-xs text-muted">Zoom
+      <label className="flex items-center gap-1.5 text-xs text-muted shrink-0"><span className="hidden md:inline">Zoom</span>
         <select className="field h-[22px] text-xs" value={view.fit ? 'fit' : String(Math.round(view.zoom * 100))} aria-label="Viewer zoom"
           onChange={(e) => useMotion.setState((s) => ({ view: e.target.value === 'fit' ? { ...s.view, fit: true, panX: 0, panY: 0 } : { ...s.view, fit: false, zoom: Number(e.target.value) / 100, panX: 0, panY: 0 } }))}>
           <option value="fit">Fit ({Math.round(zoom * 100)}%)</option>{[25, 33, 50, 100, 200, 400].map((z) => <option key={z} value={z}>{z}%</option>)}
           {!view.fit && ![25, 33, 50, 100, 200, 400].includes(Math.round(view.zoom * 100)) && <option value={Math.round(view.zoom * 100)}>{Math.round(view.zoom * 100)}%</option>}
         </select>
       </label>
-      <span className="text-2xs text-faint num ms-1">{comp.fps} fps</span>
+      <span className="text-2xs text-faint num ms-1 shrink-0 hidden lg:inline">{comp.fps} fps</span>
     </div>
   );
 }

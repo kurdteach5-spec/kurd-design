@@ -1,6 +1,6 @@
 // Motion workspace command registry: drives menus, keyboard shortcuts and tooltips.
 import * as A from './actions';
-import { useMotion, mundo, mredo, activeComp, compTime, setTime, type MotionTool } from './store';
+import { useMotion, mundo, mredo, activeComp, compTime, setTime, setAutoKey, type MotionTool } from './store';
 import { togglePlay, stop, pause } from './media/playback';
 import { openMotionDialog, useMotionUI } from './uiState';
 import { newProject, openProjectFile, saveProjectFile, restoreLast } from './project';
@@ -92,7 +92,7 @@ const add = (c: MCommand) => MCOMMANDS.set(c.id, c);
   { id: 'm.newSolid', label: 'Solid', shortcut: 'Mod+Y', run: () => A.addSolid(), enabled: hasComp },
   { id: 'm.newText', label: 'Text', shortcut: 'Mod+Alt+Shift+T', run: () => { A.addText(); }, enabled: hasComp },
   { id: 'm.newRect', label: 'Rectangle', run: () => A.addShape('rect'), enabled: hasComp },
-  { id: 'm.newRounded', label: 'Rounded Rectangle', run: () => { const id = A.addShape('rect'); if (id) A.setPropValue(id, 'shape.roundness', 40); }, enabled: hasComp },
+  { id: 'm.newRounded', label: 'Rounded Rectangle', run: () => { const id = A.addShape('rect'); if (id) A.setPropValue(id, 'shape.roundness', 40, undefined, 'Rounded Rectangle', false); }, enabled: hasComp },
   { id: 'm.newEllipse', label: 'Ellipse', run: () => A.addShape('ellipse'), enabled: hasComp },
   { id: 'm.newPolygon', label: 'Polygon', run: () => A.addShape('polygon'), enabled: hasComp },
   { id: 'm.newStar', label: 'Star', run: () => A.addShape('star'), enabled: hasComp },
@@ -136,6 +136,7 @@ const add = (c: MCommand) => MCOMMANDS.set(c.id, c);
   // view / transport
   { id: 'm.play', label: 'Play / Pause', shortcut: 'Space', run: togglePlay, enabled: hasComp },
   { id: 'm.stop', label: 'Stop', run: stop, enabled: hasComp },
+  { id: 'm.autoKey', label: 'Auto-Keyframe', shortcut: 'Alt+Shift+K', run: () => setAutoKey(!useMotion.getState().autoKey), checked: () => useMotion.getState().autoKey },
   { id: 'm.loop', label: 'Loop Playback', run: () => useMotion.setState((s) => ({ loop: !s.loop })), checked: () => useMotion.getState().loop },
   { id: 'm.prevFrame', label: 'Previous Frame', shortcut: 'PageUp|Mod+ArrowLeft', run: () => A.stepFrames(-1), enabled: hasComp },
   { id: 'm.nextFrame', label: 'Next Frame', shortcut: 'PageDown|Mod+ArrowRight', run: () => A.stepFrames(1), enabled: hasComp },

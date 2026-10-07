@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { LuLanguages, LuCheck } from 'react-icons/lu';
 import { LANGUAGES, setLang, useLang } from '../../i18n';
+import { Floating } from './Floating';
 
 /** Compact language picker for the header. Language names are shown in their own script. */
 export function LanguageMenu() {
   const lang = useLang((s) => s.lang);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const btn = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (!open) return;
     const down = (e: PointerEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
@@ -17,12 +19,12 @@ export function LanguageMenu() {
   const current = LANGUAGES.find((l) => l.id === lang)!;
   return (
     <div ref={ref} className="relative h-full flex items-center">
-      <button type="button" className="h-[26px] px-2 rounded-[4px] inline-flex items-center gap-1.5 text-ink hover:bg-hover" aria-haspopup="menu" aria-expanded={open}
+      <button ref={btn} type="button" className="h-[26px] px-1.5 sm:px-2 rounded-[4px] inline-flex items-center gap-1.5 text-ink hover:bg-hover whitespace-nowrap" aria-haspopup="menu" aria-expanded={open}
         aria-label="Language" data-tip="Language" onClick={() => setOpen((o) => !o)}>
-        <LuLanguages size={15} /><span translate="no" className="text-xs">{current.label}</span>
+        <LuLanguages size={15} /><span translate="no" className="text-xs hidden md:inline">{current.label}</span><span translate="no" className="text-xs md:hidden">{current.short}</span>
       </button>
       {open && (
-        <div role="menu" className="menu absolute end-0 top-full mt-0.5 z-50 min-w-[150px]">
+        <Floating side="below" getAnchor={() => btn.current}><div role="menu" className="menu min-w-[150px]">
           {LANGUAGES.map((l) => (
             <div key={l.id} role="menuitemradio" aria-checked={l.id === lang} tabIndex={0} className="menu-item hover:bg-hover"
               onClick={() => { setLang(l.id); setOpen(false); }}
@@ -31,7 +33,7 @@ export function LanguageMenu() {
               <span className="flex-1" translate="no" lang={l.id}>{l.label}</span>
             </div>
           ))}
-        </div>
+        </div></Floating>
       )}
     </div>
   );

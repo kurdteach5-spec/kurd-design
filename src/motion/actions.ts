@@ -270,15 +270,28 @@ export function precompose(ids = useMotion.getState().selectedLayers, name?: str
 }
 
 // ---------- properties & keyframes ----------
-export function setPropValue(layerId: string, path: string, v: PropValue, mergeKey?: string, label = 'Change Property') {
+/** Values that Auto-Keyframe records (numbers, vectors, colors — not paths or text). */
+const autoKeyable = (v: PropValue) => typeof v === 'number' || (Array.isArray(v) && v.every((x) => typeof x === 'number')) || (typeof v === 'string' && /^(#|rgb|hsl)/i.test(v));
+/**
+ * Sets a property at time t. Animated properties get a keyframe at t (new or updated).
+ * With Auto-Keyframe on, a still property starts animating: a keyframe keeps the old value at the
+ * layer's start and a new keyframe holds the new value at t, so the change animates right away.
+ */
+function writeAt(l: MLayer, p: Prop<PropValue>, t: number, v: PropValue, fps: number, auto = true): Prop<PropValue> {
+  if (p.k.length || !auto || !useMotion.getState().autoKey || !autoKeyable(v) || JSON.stringify(v) === JSON.stringify(p.v)) return setAt(p, t, v, fps);
+  const start = Math.max(0, l.inPoint);
+  if (t - start < 0.5 / fps) return { v: p.v, k: [makeKey(t, v)] };
+  return { v: p.v, k: [makeKey(snapTime(start, fps), p.v), makeKey(t, v)] };
+}
+export function setPropValue(layerId: string, path: string, v: PropValue, mergeKey?: string, label = 'Change Property', auto = true) {
   const c = comp(); if (!c) return;
   const t = now();
-  mcommit(updateLayer(c.id, layerId, (l) => { const p = getProp(l, path); return p ? setProp(l, path, setAt(p as Prop<PropValue>, t, v, c.fps)) : l; }), label, mergeKey ?? `${layerId}:${path}`);
+  mcommit(updateLayer(c.id, layerId, (l) => { const p = getProp(l, path); return p ? setProp(l, path, writeAt(l, p as Prop<PropValue>, t, v, c.fps, auto)) : l; }), label, mergeKey ?? `${layerId}:${path}`);
 }
 /** Apply the same value change to several selected layers (e.g. dragging a field with many layers selected). */
 export function setPropForLayers(ids: string[], path: string, fn: (p: Prop) => PropValue, label = 'Change Property', mergeKey?: string) {
   const c = comp(); if (!c) return; const t = now();
-  mcommit(updateComp(c.id, (cc) => ({ ...cc, layers: cc.layers.map((l) => { if (!ids.includes(l.id)) return l; const p = getProp(l, path); return p ? setProp(l, path, setAt(p as Prop<PropValue>, t, fn(p), c.fps)) : l; }) })), label, mergeKey);
+  mcommit(updateComp(c.id, (cc) => ({ ...cc, layers: cc.layers.map((l) => { if (!ids.includes(l.id)) return l; const p = getProp(l, path); return p ? setProp(l, path, writeAt(l, p as Prop<PropValue>, t, fn(p), c.fps)) : l; }) })), label, mergeKey);
 }
 export function toggleStopwatch(layerId: string, path: string) {
   const c = comp(); if (!c) return; const t = now();

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { COMMANDS, formatShortcut, run, ADJUSTMENT_KINDS } from '../../shortcuts/commands';
 import { FILTERS } from '../../filters/definitions';
+import { Floating } from '../ui/Floating';
 import { LuCheck, LuChevronRight } from 'react-icons/lu';
 import { useDocuments } from '../../state/documentStore';
 
@@ -41,6 +42,7 @@ function MenuList({ items, onDone, depth = 0 }: { items: Entry[]; onDone: () => 
   const [active, setActive] = useState(-1);
   const [sub, setSub] = useState<number | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const itemEls = useRef<(HTMLDivElement | null)[]>([]);
   const actionable = items.map((e, i) => (e === '-' ? -1 : i)).filter((i) => i >= 0);
   useEffect(() => { if (depth === 0) ref.current?.focus(); }, [depth]);
   const activate = (i: number) => {
@@ -61,11 +63,11 @@ function MenuList({ items, onDone, depth = 0 }: { items: Entry[]; onDone: () => 
         if (e === '-') return <div key={i} className="menu-sep" role="separator" />;
         if (typeof e === 'object') {
           return (
-            <div key={i} className="relative" onMouseEnter={() => { setActive(i); setSub(i); }}>
+            <div key={i} className="relative" ref={(el: HTMLDivElement | null) => { itemEls.current[i] = el; }} onMouseEnter={() => { setActive(i); setSub(i); }} onClick={() => setSub(i)}>
               <div className="menu-item" role="menuitem" aria-haspopup="menu" aria-expanded={sub === i} data-active={active === i}>
                 <span className="w-3.5" /><span className="flex-1">{e.label}</span><LuChevronRight size={13} className="rtl:-scale-x-100" />
               </div>
-              {sub === i && <div className="absolute start-full -top-1 ms-0.5 z-10"><MenuList items={e.items} onDone={onDone} depth={depth + 1} /></div>}
+              {sub === i && <Floating side="side" getAnchor={() => itemEls.current[i]}><MenuList items={e.items} onDone={onDone} depth={depth + 1} /></Floating>}
             </div>
           );
         }
@@ -88,6 +90,7 @@ function MenuList({ items, onDone, depth = 0 }: { items: Entry[]; onDone: () => 
 export function MenuBar() {
   const [open, setOpen] = useState<number | null>(null);
   const bar = useRef<HTMLDivElement>(null);
+  const btns = useRef<(HTMLButtonElement | null)[]>([]);
   useDocuments((s) => s.activeId); // re-render enabled states when switching documents
   useEffect(() => {
     if (open === null) return;
@@ -106,12 +109,12 @@ export function MenuBar() {
     <div ref={bar} className="flex items-center h-full" role="menubar">
       {MENUS.map((m, i) => (
         <div key={m.label} className="relative h-full">
-          <button type="button" role="menuitem" aria-haspopup="menu" aria-expanded={open === i}
-            className={`h-full px-2.5 rounded-[4px] ${open === i ? 'bg-hover text-ink-strong' : 'text-ink hover:bg-hover'}`}
+          <button type="button" role="menuitem" aria-haspopup="menu" aria-expanded={open === i} ref={(el: HTMLButtonElement | null) => { btns.current[i] = el; }}
+            className={`h-full px-2.5 rounded-[4px] whitespace-nowrap ${open === i ? 'bg-hover text-ink-strong' : 'text-ink hover:bg-hover'}`}
             onPointerDown={(e) => { e.preventDefault(); setOpen(open === i ? null : i); }}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); setOpen(i); } }}
             onMouseEnter={() => { if (open !== null) setOpen(i); }}>{m.label}</button>
-          {open === i && <div className="absolute start-0 top-full mt-0.5 z-50"><MenuList items={m.items} onDone={() => setOpen(null)} /></div>}
+          {open === i && <Floating side="below" getAnchor={() => btns.current[i]}><MenuList items={m.items} onDone={() => setOpen(null)} /></Floating>}
         </div>
       ))}
     </div>

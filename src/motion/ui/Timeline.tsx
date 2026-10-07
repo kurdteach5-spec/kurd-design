@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Composition, Keyframe, MLayer, Prop } from '../types';
-import { useMotion, activeComp, getProp, setTime, type KeyRef } from '../store';
+import { useMotion, activeComp, getProp, setTime, setAutoKey, type KeyRef } from '../store';
 import * as A from '../actions';
 import { formatTimecode, parseTimecode, snapTime } from '../anim';
 import { layerGroups, type PropMeta } from './propTree';
@@ -8,12 +8,21 @@ import { Diamond, PropLine } from './fields';
 import { GraphEditor } from './GraphEditor';
 import { assetData, useAssetVersion } from '../media/assets';
 import { Popover } from '../../components/ui/controls';
+import { useWindowSize } from '../../utils/useWindowSize';
 import {
   LuEye, LuEyeOff, LuVolume2, LuVolumeX, LuLock, LuLockOpen, LuChevronRight, LuType, LuShapes, LuSquare, LuImage, LuFilm, LuMusic, LuBox, LuCamera,
   LuSlidersHorizontal, LuLayers, LuChartSpline, LuMagnet, LuFlag, LuTrash2, LuArrowUp, LuArrowDown, LuCircleDot, LuWand, LuPlus,
 } from 'react-icons/lu';
 
-const ROW = 22, LROW = 26, LEFT_W = 460;
+const ROW = 22, LROW = 26;
+/** Width of the layer outline column; it narrows (and drops columns) on small screens. */
+type Outline = { w: number; parent: boolean; switches: boolean; av: boolean };
+const outlineFor = (total: number): Outline =>
+  total >= 1000 ? { w: 460, parent: true, switches: true, av: true }
+  : total >= 760 ? { w: 366, parent: false, switches: true, av: true }
+  : total >= 520 ? { w: 290, parent: false, switches: false, av: true }
+  : { w: Math.max(170, Math.round(total * 0.46)), parent: false, switches: false, av: false };
+const OutlineCtx = createContext<Outline>(outlineFor(1200));
 
 type Row =
   | { kind: 'layer'; layer: MLayer; index: number }
@@ -53,6 +62,8 @@ export function Timeline() {
   const selected = useMotion((s) => s.selectedLayers);
   const selectedKeys = useMotion((s) => s.selectedKeys);
   const [width, setWidth] = useState(800);
+  const ol = outlineFor(useWindowSize().w);
+  const LEFT_W = ol.w;
   const rightRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   useAssetVersion((s) => s.v);
@@ -83,6 +94,7 @@ export function Timeline() {
 
 
   return (
+    <OutlineCtx.Provider value={ol}>
     <div className="h-full flex flex-col min-h-0 bg-[#1e2126]" onDragOver={(e) => { if (e.dataTransfer.types.includes('text/kdm-item')) e.preventDefault(); }}
       onDrop={(e) => {
         const id = e.dataTransfer.getData('text/kdm-item'); if (!id) return;
@@ -95,7 +107,7 @@ export function Timeline() {
       <TimelineHeader comp={comp} t={t} onFit={fitAll} />
       <div className="flex border-b border-line shrink-0" style={{ height: 34 }}>
         <div className="shrink-0 border-e border-line flex items-end px-2 pb-1 gap-2 text-2xs text-faint select-none" style={{ width: LEFT_W }}>
-          <span className="w-[86px]">A/V · Solo · Lock</span><span className="w-5">#</span><span className="flex-1">Layer Name</span><span className="w-[70px]">Switches</span><span className="w-[92px]">Parent</span>
+          <span className={ol.av ? 'w-[86px] whitespace-nowrap' : 'w-[22px]'}>{ol.av ? 'A/V · Solo · Lock' : ''}</span><span className="w-5">#</span><span className="flex-1 truncate">Layer Name</span>{ol.switches && <span className="w-[70px]">Switches</span>}{ol.parent && <span className="w-[92px]">Parent</span>}
         </div>
         <div ref={rightRef} className="relative flex-1 min-w-0 overflow-hidden">
           <Ruler comp={comp} width={width} xOf={xOf} tOf={tOf} t={t} />
@@ -126,6 +138,7 @@ export function Timeline() {
       </div>
       <HScroll comp={comp} width={width} />
     </div>
+    </OutlineCtx.Provider>
   );
 }
 
@@ -134,29 +147,42 @@ function TimelineHeader({ comp, t, onFit }: { comp: Composition; t: number; onFi
   const [text, setText] = useState<string | null>(null);
   const setTl = (patch: Partial<typeof tl>) => useMotion.setState((s) => ({ timeline: { ...s.timeline, ...patch } }));
   return (
-    <div className="h-9 shrink-0 flex items-center gap-2 px-2 border-b border-line bg-panel">
-      <input className="field num h-[24px] w-[118px] text-[13px] text-accent font-medium" aria-label="Current time" value={text ?? formatTimecode(t, comp.fps)}
+    <div className="h-9 shrink-0 flex items-center gap-2 px-2 border-b border-line bg-panel overflow-x-auto overflow-y-hidden no-scrollbar">
+      <input className="field num h-[24px] w-[118px] shrink-0 text-[13px] text-accent font-medium" aria-label="Current time" value={text ?? formatTimecode(t, comp.fps)}
         onFocus={(e) => { setText(formatTimecode(t, comp.fps)); requestAnimationFrame(() => e.target.select()); }} onChange={(e) => setText(e.target.value)}
         onBlur={() => { if (text !== null) { const v = parseTimecode(text, comp.fps); if (v !== null) setTime(v); } setText(null); }}
         onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') { setText(null); (e.target as HTMLInputElement).blur(); } }} />
-      <span className="text-faint num text-xs whitespace-nowrap">{`${Math.round(t * comp.fps)} · ${comp.fps} fps`}</span>
-      <div className="w-px h-5 bg-line mx-1" />
+      <span className="text-faint num text-xs whitespace-nowrap hidden md:inline">{`${Math.round(t * comp.fps)} · ${comp.fps} fps`}</span>
+      <div className="w-px h-5 bg-line mx-1 shrink-0" />
+      <AutoKeyButton />
       <HeaderToggle on={comp.motionBlur} label="Motion blur for the composition" onClick={() => A.updateCompSettings(comp.id, { motionBlur: !comp.motionBlur })}><span className="text-[11px] font-semibold">MB</span></HeaderToggle>
       <HeaderToggle on={tl.snap} label="Snapping" onClick={() => setTl({ snap: !tl.snap })}><LuMagnet size={14} /></HeaderToggle>
       <HeaderToggle on={!tl.showShy} label="Hide shy layers" onClick={() => setTl({ showShy: !tl.showShy })}><span className="text-[11px]">shy</span></HeaderToggle>
       <HeaderToggle on={tl.graph} label="Graph Editor (Shift+F3)" onClick={() => setTl({ graph: !tl.graph })}><LuChartSpline size={14} /></HeaderToggle>
       <HeaderToggle on={false} label="Add marker (*)" onClick={() => A.addMarker()}><LuFlag size={14} /></HeaderToggle>
-      <div className="flex-1" />
-      <span className="text-faint text-xs">Zoom</span>
-      <input type="range" className="slider w-[120px]" min={0} max={100} value={Math.round((Math.log(tl.pxPerSec / 4) / Math.log(1000)) * 100)} aria-label="Timeline zoom"
+      <div className="flex-1 min-w-[8px]" />
+      <span className="text-faint text-xs hidden md:inline">Zoom</span>
+      <input type="range" className="slider w-[90px] md:w-[120px] shrink-0" min={0} max={100} value={Math.round((Math.log(tl.pxPerSec / 4) / Math.log(1000)) * 100)} aria-label="Timeline zoom"
         style={{ ['--p' as string]: `${Math.round((Math.log(tl.pxPerSec / 4) / Math.log(1000)) * 100)}%` }}
         onChange={(e) => setTl({ pxPerSec: 4 * Math.pow(1000, Number(e.target.value) / 100) })} />
-      <button type="button" className="btn h-[24px] px-2 text-xs" onClick={onFit}>Fit</button>
+      <button type="button" className="btn h-[24px] px-2 text-xs shrink-0" onClick={onFit}>Fit</button>
     </div>
   );
 }
+function AutoKeyButton() {
+  const on = useMotion((s) => s.autoKey);
+  const label = on ? 'Auto-Keyframe is on: every change records a keyframe (Alt+Shift+K)' : 'Auto-Keyframe is off: click the stopwatch to animate a property (Alt+Shift+K)';
+  return (
+    <button type="button" aria-pressed={on} aria-label={label} data-tip={label} onClick={() => setAutoKey(!on)}
+      className={`h-[24px] px-2 shrink-0 rounded-[4px] inline-flex items-center gap-1.5 text-[11px] font-semibold whitespace-nowrap border ${on ? 'bg-[#e5484d]/15 text-[#ff6b6f] border-[#e5484d]/50' : 'text-muted border-line hover:text-ink hover:bg-hover'}`}>
+      <span className={`w-2 h-2 rounded-full ${on ? 'bg-[#ff4d52] shadow-[0_0_6px_#ff4d52]' : 'border border-current'}`} aria-hidden />
+      <span>Auto-Key</span>
+    </button>
+  );
+}
+
 function HeaderToggle({ on, label, onClick, children }: { on: boolean; label: string; onClick: () => void; children: ReactNode }) {
-  return <button type="button" className={`h-[24px] min-w-[26px] px-1.5 rounded-[4px] inline-flex items-center justify-center ${on ? 'bg-accent-soft text-accent' : 'text-muted hover:text-ink hover:bg-hover'}`} aria-pressed={on} aria-label={label} data-tip={label} onClick={onClick}>{children}</button>;
+  return <button type="button" className={`h-[24px] min-w-[26px] px-1.5 shrink-0 rounded-[4px] inline-flex items-center justify-center ${on ? 'bg-accent-soft text-accent' : 'text-muted hover:text-ink hover:bg-hover'}`} aria-pressed={on} aria-label={label} data-tip={label} onClick={onClick}>{children}</button>;
 }
 
 // ---------- ruler (time, work area, markers) ----------
@@ -196,11 +222,11 @@ function Ruler({ comp, width, xOf, tOf, t }: { comp: Composition; width: number;
   return (
     <div className="absolute inset-0 select-none">
       {/* work area */}
-      <div className="absolute top-0 h-[9px] bg-[#4f8cff55] cursor-grab" style={{ left: ws, width: Math.max(2, we - ws) }} onPointerDown={dragWork('both')} data-tip="Work area · drag the ends to change (B / N)">
+      <div className="absolute top-0 h-[9px] bg-[#4f8cff55] cursor-grab touch-none" style={{ left: ws, width: Math.max(2, we - ws) }} onPointerDown={dragWork('both')} data-tip="Work area · drag the ends to change (B / N)">
         <div className="absolute -left-1 top-0 bottom-0 w-2 bg-accent cursor-ew-resize rounded-[2px]" onPointerDown={dragWork('start')} />
         <div className="absolute -right-1 top-0 bottom-0 w-2 bg-accent cursor-ew-resize rounded-[2px]" onPointerDown={dragWork('end')} />
       </div>
-      <div className="absolute left-0 right-0 top-[9px] bottom-0 cursor-col-resize" onPointerDown={scrub} role="slider" aria-label="Time ruler" aria-valuenow={t}>
+      <div className="absolute left-0 right-0 top-[9px] bottom-0 cursor-col-resize touch-none" onPointerDown={scrub} role="slider" aria-label="Time ruler" aria-valuenow={t}>
         {ticks.map((x) => (
           <div key={x} className="absolute bottom-0 h-[10px] border-s border-[#596270]" style={{ left: xOf(x) }}>
             <span className="absolute -top-[13px] left-1 text-[10px] text-faint num whitespace-nowrap">{step < 1 && Math.abs(x - Math.round(x)) > 1e-6 ? `${Math.round(x * comp.fps) % comp.fps}f` : formatShort(x)}</span>
@@ -331,6 +357,7 @@ function Switch({ on, label, onClick, children, dim }: { on: boolean; label: str
 function LayerOutline({ l, index, comp, selected, open, onToggle }: { l: MLayer; index: number; comp: Composition; selected: boolean; open: boolean; onToggle: () => void }) {
   const [renaming, setRenaming] = useState(false);
   const [drop, setDrop] = useState<'above' | 'below' | null>(null);
+  const ol = useContext(OutlineCtx);
   const Icon = ICON[l.type];
   const visual = l.type !== 'audio';
   const hasAudio = l.type === 'audio' || (l.type === 'video' && !!assetData(l.assetId)?.audio) || l.type === 'precomp';
@@ -348,11 +375,13 @@ function LayerOutline({ l, index, comp, selected, open, onToggle }: { l: MLayer;
       className={`relative flex items-center gap-1 pe-1.5 cursor-default border-b border-[#2a2e34] ${selected ? 'bg-[#2f4670]' : 'bg-[#22262b] hover:bg-[#282d33]'}`}
       style={{ height: LROW }}>
       {drop && <div className={`absolute left-0 right-0 h-0.5 bg-accent ${drop === 'above' ? '-top-px' : '-bottom-px'}`} />}
-      <span className="flex items-center gap-0.5 ps-1 w-[86px] shrink-0">
+      <span className={`flex items-center gap-0.5 ps-1 shrink-0 ${ol.av ? 'w-[86px]' : 'w-[24px]'}`}>
         <Switch on={l.visible} label={l.visible ? 'Hide (eye)' : 'Show (eye)'} onClick={() => A.setLayer(l.id, { visible: !l.visible }, 'Show/Hide Layer')} dim={!visual}>{l.visible ? <LuEye size={12} /> : <LuEyeOff size={12} />}</Switch>
+        {ol.av && <>
         <Switch on={l.audioOn && hasAudio} label={l.audioOn ? 'Mute audio' : 'Unmute audio'} onClick={() => A.setLayer(l.id, { audioOn: !l.audioOn }, 'Audio On/Off')} dim={!hasAudio}>{l.audioOn ? <LuVolume2 size={12} /> : <LuVolumeX size={12} />}</Switch>
         <Switch on={l.solo} label="Solo" onClick={() => A.setLayer(l.id, { solo: !l.solo }, 'Solo')}><span className={`w-2 h-2 rounded-full ${l.solo ? 'bg-amber' : 'border border-current'}`} /></Switch>
         <Switch on={l.locked} label={l.locked ? 'Unlock' : 'Lock'} onClick={() => A.setLayer(l.id, { locked: !l.locked }, 'Lock Layer')}>{l.locked ? <LuLock size={11} /> : <LuLockOpen size={11} className="opacity-60" />}</Switch>
+        </>}
       </span>
       <span className="w-2.5 h-3.5 rounded-[2px] shrink-0" style={{ background: l.label }} aria-hidden />
       <span className="w-5 text-2xs text-faint num text-center shrink-0">{index + 1}</span>
@@ -367,16 +396,16 @@ function LayerOutline({ l, index, comp, selected, open, onToggle }: { l: MLayer;
             onBlur={(e) => { A.setLayer(l.id, { name: e.currentTarget.value.trim() || l.name }, 'Rename Layer'); setRenaming(false); }} />
         ) : <span className={`block truncate text-xs ${l.visible ? 'text-ink' : 'text-faint'}`} onDoubleClick={(e) => { e.stopPropagation(); if (l.type === 'precomp') { A.openComp(l.compId); return; } setRenaming(true); }} data-tip={l.type === 'precomp' ? 'Double-click to open the composition' : undefined}>{l.name}</span>}
       </div>
-      <span className="flex items-center gap-0.5 w-[70px] shrink-0">
+      {ol.switches && <span className="flex items-center gap-0.5 w-[70px] shrink-0">
         <Switch on={!l.shy} label="Shy" onClick={() => A.setLayer(l.id, { shy: !l.shy }, 'Shy')}><span className="text-[9px]">{l.shy ? '◡' : '◠'}</span></Switch>
         <Switch on={l.effectsOn} label="Effects on/off (fx)" onClick={() => A.setLayer(l.id, { effectsOn: !l.effectsOn }, 'Effects On/Off')} dim={!l.effects.length}><span className="text-[10px] italic font-semibold">fx</span></Switch>
         <Switch on={l.motionBlur} label="Motion blur" onClick={() => A.setLayer(l.id, { motionBlur: !l.motionBlur }, 'Motion Blur')} dim={!visual}><span className="text-[9px] font-bold">◎</span></Switch>
         <Switch on={l.threeD} label="3D layer" onClick={() => A.setLayer(l.id, { threeD: !l.threeD }, '3D Layer')} dim={!visual || l.type === 'camera'}><LuBox size={11} /></Switch>
-      </span>
-      <select className="field h-[18px] w-[92px] text-2xs py-0 shrink-0" value={l.parentId ?? ''} aria-label="Parent" onClick={(e) => e.stopPropagation()} onChange={(e) => A.setParent(l.id, e.target.value || null)}>
+      </span>}
+      {ol.parent && <select className="field h-[18px] w-[92px] text-2xs py-0 shrink-0" value={l.parentId ?? ''} aria-label="Parent" onClick={(e) => e.stopPropagation()} onChange={(e) => A.setParent(l.id, e.target.value || null)}>
         <option value="">None</option>
         {comp.layers.filter((x) => x.id !== l.id).map((x) => <option key={x.id} value={x.id}>{`${comp.layers.indexOf(x) + 1}. ${x.name}`}</option>)}
-      </select>
+      </select>}
     </div>
   );
 }
@@ -459,7 +488,7 @@ function Tracks({ comp, rows, width, xOf, tOf, t, keySel, selected }: { comp: Co
 
   const p = useMotion.getState().project;
   return (
-    <div ref={ref} className="relative flex-1 min-w-0 overflow-hidden" style={{ width }} onPointerDown={startBox}
+    <div ref={ref} className="relative flex-1 min-w-0 overflow-hidden touch-none" style={{ width }} onPointerDown={startBox}
       onContextMenu={(e) => { e.preventDefault(); if (useMotion.getState().selectedKeys.length) setMenu({ x: e.clientX, y: e.clientY }); }}>
       {/* work area shading */}
       <div className="absolute top-0 bottom-0 bg-white/[0.025] pointer-events-none" style={{ left: xOf(comp.workStart), width: xOf(comp.workEnd) - xOf(comp.workStart) }} />
@@ -569,8 +598,8 @@ function HScroll({ comp, width }: { comp: Composition; width: number }) {
   const total = Math.max(comp.duration * tl.pxPerSec + 80, width);
   const frac = Math.min(1, width / total), pos = Math.min(1 - frac, tl.scroll / total);
   return (
-    <div className="h-3 shrink-0 bg-[#1a1d21] border-t border-line relative" style={{ marginInlineStart: LEFT_W }}>
-      <div className="absolute top-[3px] h-[6px] rounded-full bg-[#4a525d] hover:bg-[#5b6470] cursor-grab" style={{ left: `${pos * 100}%`, width: `${frac * 100}%` }}
+    <div className="h-3 shrink-0 bg-[#1a1d21] border-t border-line relative" style={{ marginInlineStart: useContext(OutlineCtx).w }}>
+      <div className="absolute top-[3px] h-[6px] rounded-full bg-[#4a525d] hover:bg-[#5b6470] cursor-grab touch-none" style={{ left: `${pos * 100}%`, width: `${frac * 100}%` }}
         onPointerDown={(e) => {
           const el = e.currentTarget; el.setPointerCapture(e.pointerId); const x0 = e.clientX, s0 = tl.scroll; const pw = el.parentElement!.clientWidth;
           const mm = (ev: PointerEvent) => useMotion.setState((s) => ({ timeline: { ...s.timeline, scroll: Math.max(0, Math.min(total - width, s0 + ((ev.clientX - x0) / pw) * total)) } }));

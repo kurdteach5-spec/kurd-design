@@ -133,7 +133,7 @@ export function GraphEditor({ comp, t, xOf, tOf, width }: { comp: Composition; t
   for (let v = Math.ceil(lo / vstep) * vstep; v <= hi; v += vstep) gridV.push(v);
 
   return (
-    <div ref={ref} className="absolute inset-0 bg-[#1b1e22] overflow-hidden" onPointerDown={(e) => { if (e.target === e.currentTarget || (e.target as Element).tagName === 'svg') { const r = ref.current!.getBoundingClientRect(); setTime(snapTime(tOf(e.clientX - r.left), comp.fps)); useMotion.setState({ selectedKeys: [] }); } }}>
+    <div ref={ref} className="absolute inset-0 bg-[#1b1e22] overflow-hidden touch-none" onPointerDown={(e) => { if (e.target === e.currentTarget || (e.target as Element).tagName === 'svg') { const r = ref.current!.getBoundingClientRect(); setTime(snapTime(tOf(e.clientX - r.left), comp.fps)); useMotion.setState({ selectedKeys: [] }); } }}>
       {toolbar}
       <svg width={width} height={h} className="absolute inset-0">
         {gridT.map((x) => <line key={`t${x}`} x1={xOf(x)} x2={xOf(x)} y1={0} y2={h} stroke="#2a2f36" />)}

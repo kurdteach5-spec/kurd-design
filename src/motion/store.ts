@@ -38,6 +38,8 @@ export interface MotionState {
   measuredFps: number;
   /** Effects & Presets search */
   showMatte: boolean;
+  /** Auto-keyframe: changing a value always records a keyframe at the current time. */
+  autoKey: boolean;
 }
 
 export const useMotion = create<MotionState>(() => ({
@@ -46,8 +48,16 @@ export const useMotion = create<MotionState>(() => ({
   playing: false, loop: true, quality: 0.5, tool: 'select', shapeToolMode: 'shape',
   view: { zoom: 1, fit: true, panX: 0, panY: 0 },
   timeline: { pxPerSec: 120, scroll: 0, graph: false, expanded: {}, snap: true, showShy: true },
-  measuredFps: 0, showMatte: false,
+  measuredFps: 0, showMatte: false, autoKey: readAutoKey(),
 }));
+
+function readAutoKey(): boolean {
+  try { return localStorage.getItem('kurd-design-autokey') !== '0'; } catch { return true; }
+}
+export function setAutoKey(on: boolean) {
+  useMotion.setState({ autoKey: on });
+  try { localStorage.setItem('kurd-design-autokey', on ? '1' : '0'); } catch { /* storage blocked */ }
+}
 
 const MAX_UNDO = 200;
 
