@@ -1,6 +1,9 @@
 import { useDocuments, selectActiveState, commit } from '../../state/documentStore';
 import { findLayer, updateLayer } from '../../layers/tree';
-import type { DocState, Layer, Paint, ShapeLayer, TextLayer, TextStyle } from '../../types/document';
+import type { DocState, Layer, Paint, ShapeLayer, SmartObjectLayer, TextLayer, TextStyle } from '../../types/document';
+import { editSmartContents, removeSmartFilter, setSmartFilterEnabled, setSmartFiltersEnabled } from '../../editor/smartObjects';
+import { editTextLayer } from '../../tools/textTool';
+import { filterById } from '../../filters/definitions';
 import { Checkbox, ColorButton, IconButton, NumberField, Section, Segmented, Select, Slider } from '../ui/controls';
 import { AdjustmentEditor } from './AdjustmentEditor';
 import * as L from '../../editor/layerActions';
@@ -12,7 +15,7 @@ import { applyTextStyle, setTextBoxWidth } from '../../tools/textTool';
 import { TextFields } from '../editor/OptionsBar';
 import { run } from '../../shortcuts/commands';
 import { localBounds } from '../../layers/geometry';
-import { LuFlipHorizontal2, LuFlipVertical2, LuRotateCw, LuRotateCcw } from 'react-icons/lu';
+import { LuFlipHorizontal2, LuFlipVertical2, LuRotateCw, LuRotateCcw, LuTrash2, LuPencil } from 'react-icons/lu';
 
 function TransformSection({ st, layer }: { st: DocState; layer: Layer }) {
   const session = TransformSession.create(st, [layer.id]);
@@ -104,11 +107,55 @@ function ShapeSection({ layer }: { layer: ShapeLayer }) {
   );
 }
 
+/** Change the words of a text layer at any time (also: double-click the text with the Move or Type tool). */
+function TextContentSection({ layer }: { layer: TextLayer }) {
+  const change = (text: string) => commit((st) => ({
+    ...st,
+    layers: updateLayer(st.layers, layer.id, (l) => {
+      const t = l as TextLayer;
+      const autoName = t.name === (t.text.split('\n')[0].slice(0, 32) || 'Text');
+      return { ...t, text, name: autoName ? text.split('\n')[0].slice(0, 32) || 'Text' : t.name };
+    }),
+  }), { history: 'Edit Text', mergeKey: `text-${layer.id}` });
+  return (
+    <Section title="Text">
+      <textarea className="field w-full !h-auto min-h-[64px] py-1.5 resize-y leading-snug" dir="auto" aria-label="Text" value={layer.text}
+        disabled={layer.locked} onChange={(e) => change(e.target.value)} onKeyDown={(e) => e.stopPropagation()} />
+      <button type="button" className="btn self-start inline-flex items-center gap-1.5" onClick={() => editTextLayer(layer.id)} disabled={layer.locked}><LuPencil size={13} />Edit on canvas</button>
+    </Section>
+  );
+}
+
+function SmartSection({ layer }: { layer: SmartObjectLayer }) {
+  return (
+    <Section title="Smart Object">
+      <div className="text-muted num">{`Contents: ${layer.contents.width} × ${layer.contents.height} px · ${layer.contents.layers.length} ${layer.contents.layers.length === 1 ? 'layer' : 'layers'}`}</div>
+      <div className="flex flex-wrap gap-1.5">
+        <button type="button" className="btn btn-primary" onClick={() => editSmartContents(layer.id)}>Edit Contents</button>
+        <button type="button" className="btn" onClick={() => run('layer.smart.rasterize')}>Rasterize</button>
+      </div>
+      <div className="flex items-center gap-2 mt-1">
+        <Checkbox label="Smart Filters" checked={layer.filtersEnabled} onChange={(v) => setSmartFiltersEnabled(layer.id, v)} />
+      </div>
+      {layer.filters.length === 0 && <div className="text-faint">Filters and Image › Adjustments you apply to a smart object stay editable here.</div>}
+      {layer.filters.map((f, i) => (
+        <div key={f.id} className="flex items-center gap-1.5">
+          <Checkbox label={f.kind === 'filter' ? filterById(f.filter)?.name ?? f.filter : ADJUSTMENT_LABELS[f.adjustment.kind]} checked={f.enabled} onChange={(v) => setSmartFilterEnabled(layer.id, i, v)} />
+          <div className="flex-1" />
+          <IconButton icon={LuPencil} label="Change filter settings" onClick={() => openDialog({ type: 'smart-filter', layerId: layer.id, index: i })} square={22} size={13} />
+          <IconButton icon={LuTrash2} label="Delete smart filter" onClick={() => removeSmartFilter(layer.id, i)} square={22} size={13} />
+        </div>
+      ))}
+    </Section>
+  );
+}
+
 function TextSection({ layer }: { layer: TextLayer }) {
   const s = layer.style;
   const set = (p: Partial<TextStyle>) => applyTextStyle(p);
   return (
     <>
+      <TextContentSection layer={layer} />
       <Section title="Character">
         <div className="flex flex-wrap items-center gap-2"><TextFields compact /></div>
         <div className="flex flex-wrap items-center gap-2">
@@ -229,7 +276,8 @@ export function PropertiesPanel() {
           {layer.mask && st.editTarget !== 'mask' && <button className="btn self-start" onClick={() => L.setEditTarget(layer.id, 'mask')}>Edit mask</button>}
         </Section>
       )}
-      {(layer.type === 'raster' || layer.type === 'text' || layer.type === 'shape') && st.editTarget === 'content' && <TransformSection st={st} layer={layer} />}
+      {layer.type === 'smart' && st.editTarget === 'content' && <SmartSection layer={layer} />}
+      {(layer.type === 'raster' || layer.type === 'text' || layer.type === 'shape' || layer.type === 'smart') && st.editTarget === 'content' && <TransformSection st={st} layer={layer} />}
       {layer.type === 'shape' && st.editTarget === 'content' && <ShapeSection layer={layer} />}
       {layer.type === 'text' && st.editTarget === 'content' && <TextSection layer={layer} />}
       {layer.type !== 'adjustment' && (

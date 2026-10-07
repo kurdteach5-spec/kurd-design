@@ -6,6 +6,8 @@ import { toastError } from './state/uiStore';
 import { getDocState, useDocuments } from './state/documentStore';
 import { allLayers } from './layers/tree';
 import { getEngine } from './canvas/engine';
+import { installI18n } from './i18n';
+import { useMotion } from './motion/store';
 
 // Last-resort safety net: report unexpected errors instead of failing silently.
 window.addEventListener('error', (e) => {
@@ -24,7 +26,9 @@ window.addEventListener('unhandledrejection', (e) => {
   state: () => getDocState(),
   engine: () => getEngine(),
   layers: () => { const s = getDocState(); return s ? allLayers(s.layers).map((l) => ({ id: l.id, name: l.name, type: l.type, opacity: l.opacity, blendMode: l.blendMode, visible: l.visible })) : []; },
+  motion: () => useMotion.getState(),
   history: () => { const s = useDocuments.getState(); const d = s.activeId ? s.docs[s.activeId] : null; return d ? { labels: d.history.map((h) => h.label), index: d.historyIndex } : null; },
 };
 
+installI18n();
 createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>);

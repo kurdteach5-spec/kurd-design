@@ -54,9 +54,9 @@ export function NumberField({ label, value, onChange, min = -Infinity, max = Inf
   return (
     <label className="inline-flex items-center gap-1.5 shrink-0" title={title}>
       {label !== undefined && <span className="text-muted cursor-ew-resize select-none" onPointerDown={scrub}>{label}</span>}
-      <span className="relative inline-flex items-center">
+      <span className="relative inline-flex items-center" dir="ltr">
         <input
-          className="field num text-right" style={{ width, paddingRight: unit ? 18 : 6 }}
+          className="field num text-end" style={{ width, paddingRight: unit ? 18 : 6 }}
           value={text} disabled={disabled}
           onFocus={(e) => { setEditing(true); e.currentTarget.select(); }}
           onChange={(e) => setText(e.target.value)}
@@ -71,7 +71,7 @@ export function NumberField({ label, value, onChange, min = -Infinity, max = Inf
           }}
           aria-label={title ?? (typeof label === 'string' ? label : undefined)}
         />
-        {unit && <span className="absolute right-1.5 text-faint text-2xs pointer-events-none">{unit}</span>}
+        {unit && <span className="absolute end-1.5 text-faint text-2xs pointer-events-none">{unit}</span>}
       </span>
     </label>
   );
@@ -88,7 +88,7 @@ export function Slider({ label, value, min, max, step = 1, onChange, unit, preci
         <span className="text-muted">{label}</span>
         <NumberField value={value} onChange={onChange} min={min} max={max} step={step} unit={unit} width={inputWidth} precision={precision} title={label} />
       </div>
-      <input type="range" className="slider" min={min} max={max} step={step} value={value} aria-label={label}
+      <input type="range" className="slider" dir="ltr" min={min} max={max} step={step} value={value} aria-label={label}
         style={{ ['--p' as string]: `${clamp(p, 0, 100)}%` }}
         onChange={(e) => onChange(Number(e.target.value))}
         onDoubleClick={() => onChange(clamp(0, min, max))} />
@@ -134,7 +134,7 @@ export function Segmented<T extends string>({ value, options, onChange }: { valu
 }
 
 /** Floating layer anchored to an element. Closes on outside click / Escape. */
-export function Popover({ anchor, onClose, children, placement = 'bottom-start', offset = 4 }: {
+export function Popover({ anchor, onClose, children, placement: place = 'bottom-start', offset = 4 }: {
   anchor: HTMLElement | null; onClose: () => void; children: ReactNode; placement?: 'bottom-start' | 'right-start' | 'bottom-end' | 'left-start'; offset?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -142,11 +142,14 @@ export function Popover({ anchor, onClose, children, placement = 'bottom-start',
   useLayoutEffect(() => {
     if (!anchor || !ref.current) return;
     const a = anchor.getBoundingClientRect(); const r = ref.current.getBoundingClientRect();
+    // mirror horizontal placements in right-to-left layouts
+    const flip: Record<string, typeof place> = { 'right-start': 'left-start', 'left-start': 'right-start', 'bottom-start': 'bottom-end', 'bottom-end': 'bottom-start' };
+    const placement = document.documentElement.dir === 'rtl' ? flip[place] : place;
     let x = placement === 'right-start' ? a.right + offset : placement === 'bottom-end' ? a.right - r.width : placement === 'left-start' ? a.left - r.width - offset : a.left;
     let y = placement === 'right-start' || placement === 'left-start' ? a.top : a.bottom + offset;
     x = clamp(x, 4, window.innerWidth - r.width - 4); y = clamp(y, 4, window.innerHeight - r.height - 4);
     setPos({ x, y });
-  }, [anchor, placement, offset]);
+  }, [anchor, place, offset]);
   useEffect(() => {
     const down = (e: PointerEvent) => { if (ref.current && !ref.current.contains(e.target as Node) && !anchor?.contains(e.target as Node)) onClose(); };
     const key = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } };
@@ -183,8 +186,8 @@ export function Section({ title, children, defaultOpen = true, right }: { title:
   return (
     <div className="border-b border-line-soft">
       <div className="flex items-center h-8 px-3">
-        <button type="button" className="flex-1 text-left font-medium text-ink-strong flex items-center gap-1.5" aria-expanded={open} onClick={() => setOpen(!open)}>
-          <svg width="8" height="8" viewBox="0 0 8 8" className={`transition-transform ${open ? 'rotate-90' : ''}`} aria-hidden><path d="M2 1l4 3-4 3z" fill="currentColor" /></svg>
+        <button type="button" className="flex-1 text-start font-medium text-ink-strong flex items-center gap-1.5" aria-expanded={open} onClick={() => setOpen(!open)}>
+          <svg width="8" height="8" viewBox="0 0 8 8" className={`transition-transform ${open ? 'rotate-90' : 'rtl:-scale-x-100'}`} aria-hidden><path d="M2 1l4 3-4 3z" fill="currentColor" /></svg>
           {title}
         </button>
         {right}
@@ -196,7 +199,7 @@ export function Section({ title, children, defaultOpen = true, right }: { title:
 
 /** Single global tooltip driven by data-tip attributes (cheap: one listener for the whole app). */
 export function TooltipHost() {
-  const [tip, setTip] = useState<{ text: string; key?: string; x: number; y: number; side: boolean } | null>(null);
+  const [tip, setTip] = useState<{ text: string; key?: string; x: number; y: number; side: false | 'left' | 'right' } | null>(null);
   useEffect(() => {
     let timer = 0; let current: HTMLElement | null = null;
     const over = (e: PointerEvent) => {
@@ -207,8 +210,9 @@ export function TooltipHost() {
       timer = window.setTimeout(() => {
         const r = el.getBoundingClientRect();
         const below = r.bottom + 30 < window.innerHeight;
-        const side = el.closest('[data-tip-side="right"]');
-        setTip({ side: !!side, text: el.dataset.tip!, key: el.dataset.tipKey, x: side ? r.right + 8 : r.left + r.width / 2, y: side ? r.top + r.height / 2 - 11 : below ? r.bottom + 6 : r.top - 28 });
+        // tools on the edge of the window show their tip beside them (mirrored in right-to-left layouts)
+        const side = el.closest('[data-tip-side="right"]') ? (document.documentElement.dir === 'rtl' ? 'left' : 'right') : false;
+        setTip({ side, text: el.dataset.tip!, key: el.dataset.tipKey, x: side === 'right' ? r.right + 8 : side === 'left' ? r.left - 8 : r.left + r.width / 2, y: side ? r.top + r.height / 2 - 11 : below ? r.bottom + 6 : r.top - 28 });
       }, 450);
     };
     const hide = () => { clearTimeout(timer); current = null; setTip(null); };
@@ -220,7 +224,7 @@ export function TooltipHost() {
   useLayoutEffect(() => {
     if (!tip || !ref.current) return;
     const r = ref.current.getBoundingClientRect();
-    if (tip.side) { setDx(0); return; }
+    if (tip.side) { setDx(tip.side === 'left' ? -r.width : 0); return; }
     const left = tip.x - r.width / 2;
     setDx(clamp(left, 4, window.innerWidth - r.width - 4) - tip.x);
   }, [tip]);

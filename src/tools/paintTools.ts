@@ -48,7 +48,7 @@ function brushTool(id: ToolId, kind: BrushKind): Tool {
   const label = { brush: 'Brush', pencil: 'Pencil', eraser: 'Eraser', 'clone-stamp': 'Clone Stamp' }[kind];
   const begin = (e: ToolPointerEvent, engine: Engine, from?: Point) => {
     const st = engine.state; if (!st) return;
-    target = getPaintTarget(st); if (!target) return;
+    target = getPaintTarget(st, { newLayer: kind === 'brush' || kind === 'pencil' || kind === 'clone-stamp' }); if (!target) return;
     const s = useTools.getState();
     const set = brushSettings(kind);
     let color = target.color(s.foreground);
@@ -245,7 +245,7 @@ export const gradientTool: Tool = {
   cursor: () => 'crosshair',
   onDown(e, engine) {
     const st = engine.state; if (!st) return;
-    gTarget = getPaintTarget(st); if (!gTarget) return;
+    gTarget = getPaintTarget(st, { newLayer: true }); if (!gTarget) return;
     gStart = e.doc; gEnd = e.doc;
   },
   onMove(e, engine, dragging) {

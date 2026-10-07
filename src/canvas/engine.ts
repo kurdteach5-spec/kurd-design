@@ -2,7 +2,8 @@ import type { DocState, EditorDocument, Layer, ViewState } from '../types/docume
 import { useDocuments, getDoc, setView, currentState } from '../state/documentStore';
 import { useUI, useCursor } from '../state/uiStore';
 import { useTools } from '../state/toolStore';
-import { Compositor, toGrayscale } from './compositor';
+import { Compositor, toGrayscale, sharedCompositor } from './compositor';
+import { useFontVersion } from '../utils/fonts';
 import { checker, createCanvas, ctx2d } from '../utils/canvas';
 import { apply, clamp, invert, multiply, rotateM, scaleM, translate, type Matrix, type Point } from '../utils/math';
 import { selectionOutline } from './selection';
@@ -86,6 +87,8 @@ export class Engine {
     this.unsub.push(useUI.subscribe((s, p) => {
       if (s.showGrid !== p.showGrid || s.showGuides !== p.showGuides || s.showPixelGrid !== p.showPixelGrid || s.showRulers !== p.showRulers || s.gridSize !== p.gridSize || s.gridColor !== p.gridColor || s.showSelectionEdges !== p.showSelectionEdges) this.invalidateView();
     }));
+    // a web font finished loading: re-measure and redraw text layers
+    this.unsub.push(useFontVersion.subscribe(() => { this.compositor.clearCaches(); sharedCompositor.clearCaches(); this.invalidate(); }));
     this.unsub.push(useTools.subscribe((s, p) => {
       if (s.tool !== p.tool) this.switchTool(s.tool);
       if (s.options !== p.options) this.invalidateView();

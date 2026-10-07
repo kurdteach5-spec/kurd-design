@@ -1,4 +1,5 @@
 import { COMMANDS, matches, parseShortcut, run, type KeyCombo } from './commands';
+import { isMotion } from '../state/workspace';
 import { getEngine } from '../canvas/engine';
 import { useUI } from '../state/uiStore';
 import { useTools, setTool, setOptions, type ToolId } from '../state/toolStore';
@@ -31,7 +32,7 @@ export function isEditable(t: EventTarget | null): boolean {
 let opacityTimer = 0; let opacityBuf = '';
 
 function onKeyDown(e: KeyboardEvent) {
-  if (e.defaultPrevented) return;
+  if (e.defaultPrevented || isMotion()) return;
   const engine = getEngine();
   if (useUI.getState().dialog) return; // dialogs handle their own keys
   if (isEditable(e.target)) return; // never interfere with text entry

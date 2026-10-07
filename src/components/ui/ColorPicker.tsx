@@ -47,7 +47,7 @@ export function ColorPicker({ color, onChange }: { color: string; onChange: (hex
   };
 
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="flex flex-col gap-2.5" dir="ltr">
       <div ref={sv} className="relative h-32 rounded-[4px] cursor-crosshair touch-none" role="slider" aria-label="Saturation and brightness" aria-valuetext={hex}
         style={{ background: `linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, hsl(${hsv.h} 100% 50%))` }}
         onPointerDown={drag(sv, (x, y) => emit({ ...hsv, s: x, v: 1 - y }))}
@@ -58,14 +58,14 @@ export function ColorPicker({ color, onChange }: { color: string; onChange: (hex
           else if (e.key === 'ArrowUp') emit({ ...hsv, v: clamp(hsv.v + d, 0, 1) }); else if (e.key === 'ArrowDown') emit({ ...hsv, v: clamp(hsv.v - d, 0, 1) }); else return;
           e.preventDefault();
         }}>
-        <span className="absolute w-3 h-3 -ml-1.5 -mt-1.5 rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0,.5)] pointer-events-none"
+        <span className="absolute w-3 h-3 -ms-1.5 -mt-1.5 rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0,.5)] pointer-events-none"
           style={{ left: `${hsv.s * 100}%`, top: `${(1 - hsv.v) * 100}%`, background: hex }} />
       </div>
       <div ref={hue} className="relative h-3 rounded-full cursor-pointer touch-none" role="slider" aria-label="Hue" aria-valuenow={Math.round(hsv.h)} tabIndex={0}
         style={{ background: 'linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)' }}
         onPointerDown={drag(hue, (x) => emit({ ...hsv, h: x * 359.9 }))}
         onKeyDown={(e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); emit({ ...hsv, h: clamp(hsv.h + (e.key === 'ArrowRight' ? 5 : -5), 0, 359.9) }); } }}>
-        <span className="absolute top-1/2 w-3 h-3 -ml-1.5 -mt-1.5 rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0,.5)] pointer-events-none" style={{ left: `${(hsv.h / 360) * 100}%`, background: `hsl(${hsv.h} 100% 50%)` }} />
+        <span className="absolute top-1/2 w-3 h-3 -ms-1.5 -mt-1.5 rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0,.5)] pointer-events-none" style={{ left: `${(hsv.h / 360) * 100}%`, background: `hsl(${hsv.h} 100% 50%)` }} />
       </div>
       <div className="flex items-center gap-2">
         <span className="w-7 h-7 rounded-[4px] border border-line shrink-0" style={{ background: hex }} />
@@ -84,7 +84,7 @@ export function ColorPicker({ color, onChange }: { color: string; onChange: (hex
         {triple.map((v, i) => (
           <label key={i} className="flex items-center gap-1 flex-1">
             <span className="text-faint w-2">{labels[i]}</span>
-            <input className="field num w-full text-right px-1" type="number" min={0} max={maxes[i]} value={v} aria-label={labels[i]}
+            <input className="field num w-full text-end px-1" type="number" min={0} max={maxes[i]} value={v} aria-label={labels[i]}
               onChange={(e) => setComponent(i, Number(e.target.value))} />
           </label>
         ))}

@@ -1,9 +1,10 @@
 import type { DocState, Layer, LayerMask, RasterLayer } from '../types/document';
 import { commit, getDocState } from '../state/documentStore';
-import { findLayer, updateLayer } from '../layers/tree';
+import { findLayer, updateLayer, allLayers, insertLayers } from '../layers/tree';
+import { createEmptyRaster } from '../layers/factory';
 import { createCanvas, ctx2d } from '../utils/canvas';
 import { isIntegerTranslation, transformRect, translate, unionRect, type Point, type Rect } from '../utils/math';
-import { toast } from '../state/uiStore';
+import { toast, openDialog, type DialogDescriptor } from '../state/uiStore';
 import { renderDocument, sharedCompositor } from '../canvas/compositor';
 import { selectionAlpha } from '../canvas/selection';
 import { luminance, hexToRgb, grayHex } from '../utils/color';
@@ -51,7 +52,18 @@ function readableCopy(src: HTMLCanvasElement): HTMLCanvasElement {
 }
 
 /** Resolves where pixel tools should paint for the active layer, or explains why they can't. */
-export function getPaintTarget(state: DocState, opts: { quiet?: boolean } = {}): PaintTarget | null {
+/** Brush-type tools on a text/shape layer paint on a new pixel layer above it, keeping the original editable. */
+function paintOnNewLayer(state: DocState, above: Layer): PaintTarget | null {
+  const used = new Set(allLayers(state.layers).map((l) => l.name));
+  let i = 1; while (used.has(`Layer ${i}`)) i++;
+  const layer = createEmptyRaster(`Layer ${i}`, state.width, state.height);
+  commit((s) => ({ ...s, layers: insertLayers(s.layers, [layer], above.id, 'above'), activeLayerId: layer.id, selectedLayerIds: [layer.id], editTarget: 'content' }), { history: 'New Layer' });
+  toast(above.type === 'smart' ? 'Smart objects stay editable, so you\'re painting on a new layer.' : `${above.type === 'text' ? 'Text' : 'Shape'} layers stay editable, so you're painting on a new layer.`, 'info', 3500);
+  const next = getDocState();
+  return next ? getPaintTarget(next, { quiet: true }) : null;
+}
+
+export function getPaintTarget(state: DocState, opts: { quiet?: boolean; newLayer?: boolean; next?: DialogDescriptor } = {}): PaintTarget | null {
   const layer = activeLayer(state);
   const say = (m: string) => { if (!opts.quiet) toast(m, 'warning'); return null; };
   if (!layer) return say('Select a layer to paint on.');
@@ -75,7 +87,12 @@ export function getPaintTarget(state: DocState, opts: { quiet?: boolean } = {}):
     };
   }
   if (layer.type !== 'raster') {
-    return say(layer.type === 'group' ? 'This works on pixel layers. Select a layer inside the group.' : `${layer.type === 'text' ? 'Text' : layer.type === 'shape' ? 'Shape' : 'This'} layers need to be rasterized first (Layer › Rasterize Layer).`);
+    if ((layer.type === 'text' || layer.type === 'shape' || layer.type === 'smart') && !opts.quiet) {
+      if (opts.newLayer) return paintOnNewLayer(state, layer);
+      openDialog({ type: 'confirm-rasterize', layerId: layer.id, next: opts.next });
+      return null;
+    }
+    return say(layer.type === 'group' ? 'This works on pixel layers. Select a layer inside the group.' : 'This works on pixel layers.');
   }
   const t = layer.transform;
   let canvas: HTMLCanvasElement, ox: number, oy: number;

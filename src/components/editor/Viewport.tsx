@@ -87,7 +87,7 @@ export function Viewport() {
   };
 
   return (
-    <div className="relative w-full h-full grid bg-surround" style={{ gridTemplateColumns: showRulers ? `${RULER}px 1fr` : '0 1fr', gridTemplateRows: showRulers ? `${RULER}px 1fr` : '0 1fr' }}
+    <div dir="ltr" className="relative w-full h-full grid bg-surround" style={{ gridTemplateColumns: showRulers ? `${RULER}px 1fr` : '0 1fr', gridTemplateRows: showRulers ? `${RULER}px 1fr` : '0 1fr' }}
       onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; if (!useUI.getState().dropActive) useUI.setState({ dropActive: true }); }}
       onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) useUI.setState({ dropActive: false }); }}
       onDrop={onDrop}>

@@ -20,6 +20,36 @@ npm run build:offline   # dist/index.html + dist/kurd-design.html (single self-c
 npm run dev:offline     # rebuild on change, served at http://localhost:5173
 ```
 
+## Languages
+
+The interface is available in **English**, **کوردی (Kurdish Sorani)** and **العربية (Arabic)** — pick one from the language button in the top bar or on the start screen. Only the language changes: the layout stays exactly the same, and Kurdish/Arabic labels read right-to-left in place. The choice is remembered in the browser.
+
+Text layers support Kurdish and Arabic writing (right-to-left lines, joined letters), and the font list includes Arabic-script fonts with the Sorani letters: Noto Sans Arabic, Vazirmatn, Noto Kufi Arabic, Noto Naskh Arabic, Cairo, Tajawal, Amiri, Reem Kufi and Lalezar.
+
+Translations live in `src/i18n/ckb.ts` and `src/i18n/ar.ts` (English text → translation). See `src/i18n/index.ts` for how they are applied.
+
+## Editable text and smart objects
+
+- **Edit text any time**: double-click a text layer on the canvas (Move or Type tool) or its thumbnail in the Layers panel, use Layer › Edit Text, or change the words in the **Text** box in the Properties panel.
+- **Convert to Smart Object** (Layer › Smart Objects, or right-click a layer): wraps one or more layers — text, shapes, photos — into one layer you can scale and rotate without losing quality.
+- **Smart filters**: filters and Image › Adjustments applied to a smart object stay editable. They are listed under the layer; double-click one to change it, click the eye to hide it, or delete it.
+- **Edit Contents**: double-click a smart object to open its layers in their own tab. Change anything (e.g. the text), then press Save (Ctrl/Cmd+S) or **Done** to update the smart object.
+
+## MOTION (animation & video)
+
+Click **Motion** at the top to switch from photo editing to the motion-graphics workspace (click **Design** to go back; both keep their work).
+
+- **Compositions**: presets 1920×1080, 1080×1920, 1080×1350, 1080×1080, 3840×2160 or custom; 24/25/30/50/60 fps; duration, background color, motion-blur shutter. Several compositions in tabs; nest one in another (pre-compose, double-click to enter).
+- **Layers**: video (MP4/MOV/WebM), image, audio, text, shapes (rectangle, rounded rectangle, ellipse, polygon, star, line, arrow, pen path), solid, null, adjustment, pre-comp and 2D/3D camera. Visibility, lock, solo, shy, parenting, blend modes, 3D, motion blur, in/out points, trim, split (Ctrl+Shift+D), duplicate, speed.
+- **Timeline**: play/pause/stop/loop (Space), frame step (Page Up/Down), zoom and scroll, snapping, markers (*), work area (B/N), keyframe rows for every property.
+- **Keyframes**: click the stopwatch next to any property, then change values at another time. Select, box-select, drag, copy/paste, duplicate, delete. Linear, hold, Easy Ease (F9), ease in/out, bezier; the **Graph Editor** (Shift+F3) edits speed curves with handles. Position keyframes draw an editable motion path in the viewer.
+- **Masks**: rectangle, ellipse and pen masks on any layer; add/subtract/intersect, feather, opacity, expansion, invert — all animatable.
+- **Effects** (Effect menu or Effects & Presets panel): blur, color correction, distortion, glow, stylize, noise, sharpen, transform, keying (Chroma Key for green screen with spill suppression and matte view), shadow. Every parameter can be keyframed.
+- **Presets**: text (fade, slide, scale, typewriter, character/word reveal, bounce, pop, blur, glitch), logo, shape, transitions, glitch, cinematic, minimal, modern and broadcast (lower third, title card, news ticker). They create normal keyframes you can edit; save your own animation as a preset.
+- **Audio**: waveforms, volume (dB) keyframes, mute, fade in/out.
+- **Render**: MP4 (H.264 + AAC), WebM (VP9 + Opus, transparent where the browser supports it), GIF, PNG or JPEG sequence (.zip); size, fps, quality, bitrate, work area or whole composition. Video export uses WebCodecs (Chrome, Edge, recent Safari).
+- **Projects**: File › Save Project downloads a `.kdmotion` file with all media; the last session is also kept in browser storage (File › Restore Last Session). Undo/redo: Ctrl+Z / Ctrl+Shift+Z.
+
 ## What's in it
 
 | Area | Highlights |

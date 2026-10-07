@@ -21,6 +21,7 @@ function stripLayers(layers: Layer[], canvases: HTMLCanvasElement[]): unknown[] 
     if (l.mask) base.mask = { ...l.mask, canvas: ref(l.mask.canvas) };
     if (l.type === 'raster') base.canvas = ref(l.canvas);
     if (l.type === 'group') base.children = stripLayers(l.children, canvases);
+    if (l.type === 'smart') base.contents = { ...l.contents, layers: stripLayers(l.contents.layers, canvases) };
     return base;
   });
 }
@@ -31,6 +32,7 @@ function restoreLayers(layers: unknown[], images: HTMLCanvasElement[]): Layer[] 
     if (l.mask && isRef((l.mask as Record<string, unknown>).canvas)) l.mask = { ...(l.mask as object), canvas: images[((l.mask as Record<string, unknown>).canvas as Ref).__img] };
     if (isRef(l.canvas)) l.canvas = images[l.canvas.__img];
     if (Array.isArray(l.children)) l.children = restoreLayers(l.children, images);
+    if (l.type === 'smart' && l.contents) { const c = l.contents as { layers: unknown[] }; l.contents = { ...c, layers: restoreLayers(c.layers, images) }; }
     if (l.type === 'raster' && !(l.canvas instanceof HTMLCanvasElement)) throw new Error('Corrupted project: missing layer pixels.');
     return l as unknown as Layer;
   });

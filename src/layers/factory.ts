@@ -1,6 +1,6 @@
 import type {
   Adjustment, AdjustmentKind, AdjustmentLayer, GroupLayer, Layer, LayerEffects, Paint, RasterLayer, ShapeGeometry,
-  ShapeLayer, StrokeStyle, TextLayer, TextStyle, LevelsChannel, SelectiveColorKey, CMYK, LayerMask,
+  ShapeLayer, StrokeStyle, TextLayer, TextStyle, LevelsChannel, SelectiveColorKey, CMYK, LayerMask, SmartContents, SmartObjectLayer,
 } from '../types/document';
 import { uid } from '../utils/id';
 import { IDENTITY, translate, type Matrix } from '../utils/math';
@@ -21,6 +21,10 @@ function base(name: string) {
 
 export function createRasterLayer(name: string, canvas: HTMLCanvasElement, transform: Matrix = IDENTITY): RasterLayer {
   return { ...base(name), type: 'raster', canvas, transform: { ...transform } };
+}
+
+export function createSmartObject(name: string, contents: SmartContents, transform: Matrix = IDENTITY): SmartObjectLayer {
+  return { ...base(name), type: 'smart', contents, transform: { ...transform }, filters: [], filtersEnabled: true };
 }
 
 export function createEmptyRaster(name: string, w: number, h: number): RasterLayer {
@@ -112,5 +116,5 @@ export function createMask(w: number, h: number, gray: number, transform: Matrix
 }
 
 export const LAYER_TYPE_LABEL: Record<Layer['type'], string> = {
-  raster: 'Pixel layer', text: 'Text layer', shape: 'Shape layer', adjustment: 'Adjustment layer', group: 'Group',
+  raster: 'Pixel layer', text: 'Text layer', shape: 'Shape layer', adjustment: 'Adjustment layer', group: 'Group', smart: 'Smart Object',
 };

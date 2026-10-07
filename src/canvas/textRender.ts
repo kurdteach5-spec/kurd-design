@@ -33,7 +33,7 @@ export function layoutText(layer: Pick<TextLayer, 'text' | 'style' | 'boxWidth'>
   const cached = layoutCache.get(layer as TextLayer);
   if (cached && cached.v === v) return cached.layout;
   const s = layer.style;
-  ensureFont(s.fontFamily, s.fontWeight, s.italic);
+  ensureFont(s.fontFamily, s.fontWeight, s.italic, layer.text.slice(0, 200));
   const ctx = mctx();
   ctx.font = fontCss(s);
   const lh = s.fontSize * s.lineHeight;
@@ -89,11 +89,23 @@ export function textLocalBounds(layer: TextLayer): Rect {
 
 const supportsLetterSpacing = (() => { try { return 'letterSpacing' in CanvasRenderingContext2D.prototype; } catch { return false; } })();
 
+const RTL_CHAR = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
+const STRONG_CHAR = /[A-Za-z\u00C0-\u024F\u0370-\u03FF\u0400-\u04FF\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
+/** True when the first letter of the text is Arabic-script / Hebrew (Kurdish, Arabic, Persian…). */
+export function isRtlText(text: string): boolean {
+  const m = STRONG_CHAR.exec(text);
+  return !!m && RTL_CHAR.test(m[0]);
+}
+
 function drawLine(ctx: CanvasRenderingContext2D, line: TextLine, s: TextStyle, mode: 'fill' | 'stroke') {
   const draw = (t: string, x: number) => (mode === 'fill' ? ctx.fillText(t, x, line.baseline) : ctx.strokeText(t, x, line.baseline));
+  const rtl = isRtlText(line.text);
+  // right-to-left lines (Kurdish, Arabic) keep their word order and letter joining
+  ctx.direction = rtl ? 'rtl' : 'ltr';
   if (line.justifyGap) {
     let x = line.x;
-    for (const word of line.text.split(' ')) {
+    const words = line.text.split(' ');
+    for (const word of rtl ? words.reverse() : words) {
       drawSpaced(ctx, word, x, s.letterSpacing, draw);
       x += measure(ctx, word, s.letterSpacing) + measure(ctx, ' ', s.letterSpacing) + line.justifyGap;
     }

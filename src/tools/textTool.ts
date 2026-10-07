@@ -3,7 +3,7 @@ import type { Engine } from '../canvas/engine';
 import type { TextLayer, TextStyle } from '../types/document';
 import { create } from '../state/createStore';
 import { useTools } from '../state/toolStore';
-import { commit, getDocState } from '../state/documentStore';
+import { commit, getDocState, useDocuments } from '../state/documentStore';
 import { findLayer, insertLayers, updateLayer, layersTopDown, removeLayers } from '../layers/tree';
 import { createTextLayer } from '../layers/factory';
 import { hitTestLayer, layerQuad } from '../layers/geometry';
@@ -18,6 +18,15 @@ export interface TextEditState {
 }
 export const useTextEdit = create<TextEditState>(() => ({ layerId: null, pending: null, version: 0 }));
 
+// switching documents ends any text editing session (it belongs to the previous document)
+let lastActiveDoc: string | null = null;
+useDocuments.subscribe((s) => {
+  if (s.activeId === lastActiveDoc) return;
+  lastActiveDoc = s.activeId;
+  const t = useTextEdit.getState();
+  if (t.layerId || t.pending) useTextEdit.setState((x) => ({ layerId: null, pending: null, version: x.version + 1 }));
+});
+
 export function editingLayer(): TextLayer | null {
   const { layerId } = useTextEdit.getState(); const s = getDocState();
   const l = s && layerId ? findLayer(s.layers, layerId) : null;
@@ -27,6 +36,14 @@ export function editingLayer(): TextLayer | null {
 export function beginEditText(layerId: string) {
   commit((s) => ({ ...s, activeLayerId: layerId, selectedLayerIds: [layerId], editTarget: 'content' }));
   useTextEdit.setState((s) => ({ layerId, pending: null, version: s.version + 1 }));
+}
+
+/** Edit an existing text layer later: switches to the Type tool and puts the cursor in the text. */
+export function editTextLayer(layerId: string) {
+  const s = getDocState(); const l = s ? findLayer(s.layers, layerId) : null;
+  if (!l || l.type !== 'text') return;
+  if (useTools.getState().tool !== 'text') useTools.setState({ tool: 'text' });
+  beginEditText(layerId);
 }
 
 export function finishEditText() {

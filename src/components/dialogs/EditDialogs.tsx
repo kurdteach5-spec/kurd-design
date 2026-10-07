@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Dialog, Row } from './Dialog';
-import { closeDialog, toast, toastError, useUI } from '../../state/uiStore';
+import { closeDialog, openDialog, toast, toastError, useUI, type DialogDescriptor } from '../../state/uiStore';
 import { filterById, defaultParams } from '../../filters/definitions';
 import { runFilter, cancelFilters } from '../../filters/runner';
 import { getPaintTarget, type PaintTarget } from '../../tools/helpers';
@@ -14,7 +14,8 @@ import { defaultAdjustment, ADJUSTMENT_LABELS } from '../../layers/factory';
 import { applyAdjustment } from '../../adjustments/process';
 import type { Adjustment, AdjustmentKind, LayerEffects } from '../../types/document';
 import { findLayer, updateLayer } from '../../layers/tree';
-import { updateEffects, renameLayer } from '../../editor/layerActions';
+import { updateEffects, renameLayer, rasterizeById, newLayer } from '../../editor/layerActions';
+import { addSmartFilter, withSmartFilter, type NewSmartFilter } from '../../editor/smartObjects';
 import { uid, debounce } from '../../utils/id';
 import { COMMANDS, formatShortcut } from '../../shortcuts/commands';
 import { TOOL_GROUPS } from '../../tools/registry';
@@ -22,6 +23,7 @@ import { listAutosaves, listProjects, deleteProject, renameProject, type Autosav
 import { recoverAll, discardRecovery, openProject } from '../../editor/fileActions';
 import { timeAgo } from '../../utils/id';
 import { LuTrash2, LuPencil, LuFolderOpen } from 'react-icons/lu';
+import { tr } from '../../i18n';
 
 // ---------------- Filter ----------------
 export function FilterDialog({ id }: { id: string }) {
@@ -85,6 +87,42 @@ export function FilterDialog({ id }: { id: string }) {
           : <Checkbox key={p.key} label={p.label} checked={!!params[p.key]} onChange={(v) => setParams((x) => ({ ...x, [p.key]: v }))} />)}
       <div className="h-1 rounded-full bg-[#1d2025] overflow-hidden" aria-hidden>{progress !== null && <div className="h-full bg-accent transition-[width]" style={{ width: `${Math.max(4, progress * 100)}%` }} />}</div>
       <div className="text-faint">{getDocState()?.selection ? 'Applies inside the selection.' : 'Applies to the whole layer.'}</div>
+    </Dialog>
+  );
+}
+
+// ---------------- Smart filter (non-destructive, on a smart object) ----------------
+export function SmartFilterDialog({ layerId, filter, kind, index }: { layerId: string; filter?: string; kind?: string; index?: number }) {
+  const layer = findLayer(getDocState()?.layers ?? [], layerId);
+  const existing = layer?.type === 'smart' && index !== undefined ? layer.filters[index] ?? null : null;
+  const filterId = existing?.kind === 'filter' ? existing.filter : filter;
+  const def = filterId ? filterById(filterId) : undefined;
+  const adjKind = (existing?.kind === 'adjustment' ? existing.adjustment.kind : kind) as AdjustmentKind | undefined;
+  const [params, setParams] = useState(() => (existing?.kind === 'filter' ? existing.params : def ? defaultParams(def) : {}));
+  const [adj, setAdj] = useState<Adjustment | null>(() => (existing?.kind === 'adjustment' ? existing.adjustment : adjKind ? defaultAdjustment(adjKind) : null));
+  const [previewOn, setPreviewOn] = useState(true);
+  const entry = (): NewSmartFilter | null => (def ? { kind: 'filter', filter: def.id, params } : adj ? { kind: 'adjustment', adjustment: adj } : null);
+  const label = def ? def.name : adjKind ? ADJUSTMENT_LABELS[adjKind] : '';
+  const preview = useRef(debounce((f: NewSmartFilter | null, on: boolean) => {
+    const l = findLayer(getDocState()?.layers ?? [], layerId);
+    if (!on || !f || !l || l.type !== 'smart') { getEngine()?.clearOverride(); return; }
+    getEngine()?.setOverride(withSmartFilter(l, f, index), false);
+  }, 180));
+  useEffect(() => { preview.current(entry(), previewOn); }, [JSON.stringify(params), adj, previewOn]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => { preview.current.cancel(); getEngine()?.clearOverride(); }, []);
+  if (!layer || layer.type !== 'smart' || (!def && !adj)) { closeDialog(); return null; }
+  const ok = () => { preview.current.cancel(); getEngine()?.clearOverride(); closeDialog(); const f = entry(); if (f) { addSmartFilter(layerId, f, label, index); if (def) setLastFilter({ id: def.id, params }); } };
+  return (
+    <Dialog title={label} onClose={closeDialog} onSubmit={ok} nonModal width={340}
+      footer={<><Checkbox label="Preview" checked={previewOn} onChange={setPreviewOn} /><div className="flex-1" /><button className="btn" onClick={closeDialog}>Cancel</button><button className="btn btn-primary" onClick={ok}>Apply</button></>}>
+      {def && def.params.length === 0 && <div className="text-muted">This filter has no settings.</div>}
+      {def && def.params.map((p) => p.type === 'range'
+        ? <Slider key={p.key} label={p.label} value={Number(params[p.key])} min={p.min!} max={p.max!} step={p.step} precision={p.step && p.step < 1 ? 1 : 0} unit={p.unit === 'levels' ? '' : p.unit} onChange={(v) => setParams((x) => ({ ...x, [p.key]: v }))} />
+        : p.type === 'select'
+          ? <Row key={p.key} label={p.label}><Select value={String(params[p.key])} options={p.options!} onChange={(v) => setParams((x) => ({ ...x, [p.key]: v }))} /></Row>
+          : <Checkbox key={p.key} label={p.label} checked={!!params[p.key]} onChange={(v) => setParams((x) => ({ ...x, [p.key]: v }))} />)}
+      {adj && <AdjustmentEditor value={adj} onChange={setAdj} />}
+      <div className="text-faint">Smart filter: the original stays untouched. Change, hide or remove it later in the Properties panel.</div>
     </Dialog>
   );
 }
@@ -210,6 +248,34 @@ export function NewGuideDialog() {
   );
 }
 
+export function ConfirmRasterizeDialog({ layerId, next }: { layerId: string; next?: DialogDescriptor }) {
+  const l = findLayer(getDocState()?.layers ?? [], layerId);
+  const kind = l?.type === 'text' ? 'text' : l?.type === 'smart' ? 'smart' : 'shape';
+  const rasterizeNow = () => { closeDialog(); if (rasterizeById(layerId) && next) openDialog(next); };
+  const useNewLayer = () => { closeDialog(); newLayer(); toast('New empty layer added above. Paint on it — the original stays editable.', 'info', 3500); };
+  return (
+    <Dialog title="Rasterize this layer?" onClose={closeDialog} onSubmit={rasterizeNow} width={420}
+      footer={<>
+        <button type="button" className="btn" onClick={closeDialog}>Cancel</button>
+        {!next && <button type="button" className="btn" onClick={useNewLayer}>Use a new layer</button>}
+        <button type="button" className="btn btn-primary" onClick={rasterizeNow}>Rasterize</button>
+      </>}>
+      <p className="text-ink leading-relaxed">
+        {kind === 'smart'
+          ? `“${l?.name ?? ''}” is a smart object. It keeps its original contents and smart filters, but it has no pixels for this tool to change.`
+          : kind === 'text'
+          ? `“${l?.name ?? ''}” is a text layer. It stays sharp and editable (you can still change the words and font), but it has no pixels for this tool to change.`
+          : `“${l?.name ?? ''}” is a shape layer. It stays sharp and editable (you can still change its size, color and corners), but it has no pixels for this tool to change.`}
+      </p>
+      <p className="text-muted mt-2 leading-relaxed">{kind === 'smart'
+        ? "Rasterizing turns it into a normal pixel layer. After that it can't be edited as a smart object anymore (Undo brings it back)."
+        : kind === 'text'
+        ? "Rasterizing turns it into a normal pixel layer. After that it can't be edited as text anymore (Undo brings it back)."
+        : "Rasterizing turns it into a normal pixel layer. After that it can't be edited as a shape anymore (Undo brings it back)."}</p>
+    </Dialog>
+  );
+}
+
 export function RenameLayerDialog({ layerId }: { layerId: string }) {
   const l = findLayer(getDocState()?.layers ?? [], layerId);
   const [name, setName] = useState(l?.name ?? '');
@@ -293,7 +359,7 @@ export function RecoverDialog() {
           return (
             <div key={r.docId} className="flex items-center gap-3 p-2 rounded-[6px] bg-[#1d2025] border border-line-soft">
               <div className="w-14 h-14 flex items-center justify-center checker rounded-[3px] overflow-hidden shrink-0">{u && <img src={u} alt="" className="max-w-full max-h-full" />}</div>
-              <div className="min-w-0"><div className="text-ink-strong truncate">{r.name}</div><div className="text-faint num">{r.width} × {r.height} · autosaved {timeAgo(r.savedAt)}</div></div>
+              <div className="min-w-0"><div className="text-ink-strong truncate">{r.name}</div><div className="text-faint num">{`${r.width} × ${r.height} · autosaved ${timeAgo(r.savedAt)}`}</div></div>
             </div>
           );
         })}
@@ -317,11 +383,11 @@ export function ProjectsDialog() {
                 {renaming === p.id
                   ? <input autoFocus className="field w-full" defaultValue={p.name} aria-label="Project name" onKeyDown={async (e) => { e.stopPropagation(); if (e.key === 'Enter') { await renameProject(p.id, e.currentTarget.value.trim() || p.name); setRenaming(null); void reload(); } if (e.key === 'Escape') setRenaming(null); }} onBlur={() => setRenaming(null)} />
                   : <div className="text-ink-strong truncate">{p.name}</div>}
-                <div className="text-faint num">{p.width} × {p.height} · {p.layers} layers · edited {timeAgo(p.updatedAt)}</div>
+                <div className="text-faint num">{`${p.width} × ${p.height} · ${p.layers} layers · edited ${timeAgo(p.updatedAt)}`}</div>
               </div>
               <button type="button" className="icon-btn" aria-label={`Open ${p.name}`} data-tip="Open" onClick={() => { closeDialog(); void openProject(p.id); }}><LuFolderOpen size={15} /></button>
               <button type="button" className="icon-btn" aria-label={`Rename ${p.name}`} data-tip="Rename" onClick={() => setRenaming(p.id)}><LuPencil size={14} /></button>
-              <button type="button" className="icon-btn" aria-label={`Delete ${p.name}`} data-tip="Delete" onClick={async () => { if (confirm(`Delete “${p.name}”? This can't be undone.`)) { await deleteProject(p.id); void reload(); } }}><LuTrash2 size={14} /></button>
+              <button type="button" className="icon-btn" aria-label={`Delete ${p.name}`} data-tip="Delete" onClick={async () => { if (confirm(tr('Delete “{0}”? This can\'t be undone.', p.name))) { await deleteProject(p.id); void reload(); } }}><LuTrash2 size={14} /></button>
             </div>
           ))}
         </div>

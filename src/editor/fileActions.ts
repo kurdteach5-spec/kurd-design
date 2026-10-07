@@ -1,4 +1,5 @@
 import type { DocState } from '../types/document';
+import { pushSmartContents } from './smartObjects';
 import { closeDocument, commit, createDocument, currentState, getDoc, getDocState, isDirty, markSaved, openDocument, useDocuments, type NewDocOptions } from '../state/documentStore';
 import { openDialog, toast, toastError, useUI, withBusy } from '../state/uiStore';
 import { setTool } from '../state/toolStore';
@@ -83,6 +84,8 @@ export async function placeWithPicker() { const f = await pickFiles(OPEN_ACCEPT,
 // ---------------- Save ----------------
 export async function saveToProjects(name?: string, asNew = false): Promise<boolean> {
   const d = getDoc(); if (!d) return false;
+  // a smart object's contents tab saves back into the smart object
+  if (d.smartLink && !asNew && name === undefined) return pushSmartContents(d.id);
   const projectId = asNew ? uid('proj') : d.projectId;
   const finalName = (name ?? d.name).trim() || 'Untitled';
   const ok = await withBusy('Saving…', async () => {
@@ -160,6 +163,7 @@ async function autosaveTick() {
     const { docs } = useDocuments.getState();
     for (const d of Object.values(docs)) {
       const entry = d.history[d.historyIndex].id;
+      if (d.smartLink) continue; // contents tabs are saved into their smart object
       if (!isDirty(d)) { if (autosaved.has(d.id)) { autosaved.delete(d.id); deleteAutosave(d.id).catch(() => {}); } continue; }
       if (autosaved.get(d.id) === entry) continue;
       await new Promise<void>((r) => ((window as unknown as { requestIdleCallback?: (cb: () => void, o?: unknown) => void }).requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 50)))(() => r(), { timeout: 2000 }));

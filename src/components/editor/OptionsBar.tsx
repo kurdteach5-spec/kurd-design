@@ -109,7 +109,7 @@ export function TextFields({ compact = false }: { compact?: boolean }) {
   return (
     <>
       <Select title="Font family" value={s.fontFamily} width={150} onChange={(v) => set({ fontFamily: v })}
-        options={[FONTS.filter((f) => f.source === 'google').map((f) => ({ value: f.family, label: f.family })), FONTS.filter((f) => f.source === 'system').map((f) => ({ value: f.family, label: f.family }))]} />
+        options={[FONTS.filter((f) => f.source === 'google' && !f.arabic).map((f) => ({ value: f.family, label: f.family })), FONTS.filter((f) => f.arabic).map((f) => ({ value: f.family, label: f.family })), FONTS.filter((f) => f.source === 'system').map((f) => ({ value: f.family, label: f.family }))]} />
       <Select title="Font weight" value={String(s.fontWeight)} width={96} onChange={(v) => set({ fontWeight: Number(v) })}
         options={(font?.weights ?? [400, 700]).map((w) => ({ value: String(w), label: weightLabel[w] ?? String(w) }))} />
       <NumberField title="Font size" label={<span className="font-serif">T</span>} value={s.fontSize} min={1} max={2000} unit="px" precision={1} onChange={(v) => set({ fontSize: v })} width={62} />
@@ -330,12 +330,12 @@ export function OptionsBar() {
   };
   return (
     <div className="flex items-center gap-2.5 h-full px-2 overflow-x-auto overflow-y-hidden" role="toolbar" aria-label={`${toolLabel(tool)} options`}>
-      <span className="flex items-center gap-1.5 text-ink-strong shrink-0 pr-1"><Icon size={15} /><span className="hidden xl:inline font-medium">{transforming ? 'Free Transform' : toolLabel(tool)}</span></span>
+      <span className="flex items-center gap-1.5 text-ink-strong shrink-0 pe-1"><Icon size={15} /><span className="hidden xl:inline font-medium">{transforming ? 'Free Transform' : toolLabel(tool)}</span></span>
       <Sep />
       <ToolOptions />
       <div className="flex-1" />
       {(has || transforming) && (
-        <div className="flex items-center gap-1 shrink-0 pl-2">
+        <div className="flex items-center gap-1 shrink-0 ps-2">
           <IconButton icon={LuX} label="Cancel" shortcut="Escape" onClick={cancel} />
           <button type="button" className="btn btn-primary h-[24px] px-2.5 inline-flex items-center gap-1 !bg-amber !border-amber !text-[#2a1c00]" onClick={commit} data-tip="Commit" data-tip-key="Enter"><LuCheck size={14} />Commit</button>
         </div>

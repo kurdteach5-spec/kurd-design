@@ -217,11 +217,21 @@ export function flattenImage() {
   }, { history: 'Flatten Image' });
 }
 
+const rasterizeLabel = (t: Layer['type']) => (t === 'text' ? 'Rasterize Type' : t === 'smart' ? 'Rasterize Smart Object' : 'Rasterize Shape');
+
+/** Rasterize a specific text/shape layer (used by the "Rasterize this layer?" prompt). */
+export function rasterizeById(id: string): boolean {
+  const s = getDocState(); const l = s && findLayer(s.layers, id);
+  if (!s || !l || (l.type !== 'text' && l.type !== 'shape' && l.type !== 'smart')) return false;
+  commit((st) => ({ ...st, layers: updateLayer(st.layers, id, (x) => rasterizeLayer(st, x)), activeLayerId: id, selectedLayerIds: [id] }), { history: rasterizeLabel(l.type) });
+  return true;
+}
+
 export function rasterize() {
   const s = getDocState(); const a = s && active(s);
   if (!s || !a) return;
-  if (a.type !== 'text' && a.type !== 'shape') { toast('Only text and shape layers need rasterizing.', 'info'); return; }
-  commit((st) => ({ ...st, layers: updateLayer(st.layers, a.id, (l) => rasterizeLayer(st, l)) }), { history: `Rasterize ${a.type === 'text' ? 'Type' : 'Shape'}` });
+  if (a.type !== 'text' && a.type !== 'shape' && a.type !== 'smart') { toast('Only text, shape and smart object layers need rasterizing.', 'info'); return; }
+  commit((st) => ({ ...st, layers: updateLayer(st.layers, a.id, (l) => rasterizeLayer(st, l)) }), { history: rasterizeLabel(a.type) });
 }
 
 export function toggleClipping() {

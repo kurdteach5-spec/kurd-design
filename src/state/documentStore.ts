@@ -135,12 +135,13 @@ export function createDocument(o: NewDocOptions): string {
   return openDocument(o.name, st, { label: 'New Document' });
 }
 
-export function openDocument(name: string, state: DocState, opts: { projectId?: string; label?: string; saved?: boolean; view?: ViewState } = {}): string {
+export function openDocument(name: string, state: DocState, opts: { projectId?: string; label?: string; saved?: boolean; view?: ViewState; smartLink?: EditorDocument['smartLink'] } = {}): string {
   const id = uid('doc');
   const entry: HistoryEntry = { id: uid('h'), label: opts.label ?? 'Open', state, time: Date.now(), bytes: newBytes(null, state) };
   const doc: EditorDocument = {
     id, name, projectId: opts.projectId ?? uid('proj'), history: [entry], historyIndex: 0,
     savedEntryId: opts.saved ? entry.id : null, view: opts.view ?? { zoom: 0, panX: 0, panY: 0, rotation: 0 }, createdAt: Date.now(),
+    ...(opts.smartLink ? { smartLink: opts.smartLink } : {}),
   };
   useDocuments.setState((s) => ({ docs: { ...s.docs, [id]: doc }, order: [...s.order, id], activeId: id }));
   return id;

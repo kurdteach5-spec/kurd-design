@@ -11,6 +11,8 @@ import { getPaintTarget, activeLayer, snapLines, snapValue, snappingOn } from '.
 import { createCanvas, ctx2d } from '../utils/canvas';
 import { makeSelection, selectionOutline } from '../canvas/selection';
 import { translate } from '../utils/math';
+import { editTextLayer } from './textTool';
+import { editSmartContents } from '../editor/smartObjects';
 
 interface FloatMove { target: ReturnType<typeof getPaintTarget> & object; floating: HTMLCanvasElement; selMask: HTMLCanvasElement; start: { x: number; y: number }; dx: number; dy: number; layer: RasterLayer }
 
@@ -67,6 +69,14 @@ export const moveTool: Tool = {
   commit: () => commitTransform(),
   cancel: () => cancelTransform(),
 
+  /** Double-click text to edit it, or a smart object to edit its contents. */
+  onDoubleClick(e, engine) {
+    const st = engine.state; if (!st) return;
+    const hit = layersTopDown(st.layers).find((l) => (l.type === 'text' || l.type === 'smart') && l.visible && !l.locked && hitTestLayer(l, e.doc));
+    if (!hit) return;
+    if (useTransform.getState().session) commitTransform();
+    if (hit.type === 'text') editTextLayer(hit.id); else editSmartContents(hit.id);
+  },
   onDown(e, engine) {
     const st = engine.state; if (!st) return;
     const free = useTransform.getState().session;

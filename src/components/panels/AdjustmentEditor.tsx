@@ -96,13 +96,13 @@ function GradientStopsEditor({ stops, onChange }: { stops: GradientStop[]; onCha
   const css = `linear-gradient(to right, ${Array.from({ length: 11 }, (_, i) => { const k = Math.round(i * 25.5) * 4; return `rgba(${lut[k]},${lut[k + 1]},${lut[k + 2]},${lut[k + 3] / 255}) ${i * 10}%`; }).join(',')})`;
   return (
     <div className="flex flex-col gap-2">
-      <div className="h-5 rounded-[3px] checker border border-line overflow-hidden"><div className="w-full h-full" style={{ background: css }} /></div>
+      <div className="h-5 rounded-[3px] checker border border-line overflow-hidden" dir="ltr"><div className="w-full h-full" style={{ background: css }} /></div>
       {sorted.map((s, i) => (
         <div key={i} className="flex items-center gap-2">
           <ColorButton label="Stop color" color={s.color} onChange={(c) => onChange(sorted.map((x, j) => (j === i ? { ...x, color: c } : x)))} />
-          <input type="range" className="slider flex-1" min={0} max={100} value={Math.round(s.offset * 100)} aria-label="Stop position" style={{ ['--p' as string]: `${s.offset * 100}%` }}
+          <input type="range" className="slider flex-1" dir="ltr" min={0} max={100} value={Math.round(s.offset * 100)} aria-label="Stop position" style={{ ['--p' as string]: `${s.offset * 100}%` }}
             onChange={(e) => onChange(sorted.map((x, j) => (j === i ? { ...x, offset: Number(e.target.value) / 100 } : x)))} />
-          <span className="num w-8 text-right text-muted">{Math.round(s.offset * 100)}%</span>
+          <span className="num w-8 text-end text-muted">{Math.round(s.offset * 100)}%</span>
           <button type="button" className="icon-btn" aria-label="Remove stop" disabled={sorted.length <= 2} onClick={() => onChange(sorted.filter((_, j) => j !== i))}><LuTrash2 size={13} /></button>
         </div>
       ))}

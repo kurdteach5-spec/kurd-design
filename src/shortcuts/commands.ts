@@ -6,6 +6,8 @@ import { getEngine } from '../canvas/engine';
 import * as L from '../editor/layerActions';
 import * as E from '../editor/editActions';
 import * as F from '../editor/fileActions';
+import * as SO from '../editor/smartObjects';
+import { editTextLayer } from '../tools/textTool';
 import { startFreeTransform, startTransformSelection, useTransform } from '../tools/transformState';
 import { nudge } from '../tools/moveTool';
 import { FILTERS } from '../filters/definitions';
@@ -117,7 +119,12 @@ const list: Command[] = [
   { id: 'layer.mergeDown', label: 'Merge Down / Merge Selected', shortcut: 'Mod+E', run: L.mergeSelected, enabled: hasLayer },
   { id: 'layer.mergeVisible', label: 'Merge Visible', shortcut: 'Mod+Shift+E', run: L.mergeVisible, enabled: hasDoc },
   { id: 'layer.flatten', label: 'Flatten Image', run: L.flattenImage, enabled: hasDoc },
-  { id: 'layer.rasterize', label: 'Rasterize Layer', run: L.rasterize, enabled: () => ['text', 'shape'].includes(activeLayer()?.type ?? '') },
+  { id: 'layer.rasterize', label: 'Rasterize Layer', run: L.rasterize, enabled: () => ['text', 'shape', 'smart'].includes(activeLayer()?.type ?? '') },
+  { id: 'layer.smart.convert', label: 'Convert to Smart Object', run: SO.convertToSmartObject, enabled: hasLayer },
+  { id: 'layer.smart.edit', label: 'Edit Contents', run: () => SO.editSmartContents(), enabled: () => activeLayer()?.type === 'smart' },
+  { id: 'layer.smart.rasterize', label: 'Rasterize Smart Object', run: L.rasterize, enabled: () => activeLayer()?.type === 'smart' },
+  { id: 'filter.convertSmart', label: 'Convert for Smart Filters', run: SO.convertToSmartObject, enabled: () => hasLayer() && activeLayer()?.type !== 'smart' },
+  { id: 'layer.editText', label: 'Edit Text', run: () => { const l = activeLayer(); if (l) editTextLayer(l.id); }, enabled: () => activeLayer()?.type === 'text' },
   { id: 'layer.lock', label: 'Lock / Unlock Layer', shortcut: 'Mod+/', run: L.toggleLock, enabled: hasLayer },
   { id: 'layer.hide', label: 'Show / Hide Layer', shortcut: 'Mod+,', run: () => { const l = activeLayer(); if (l) L.toggleVisibility(l.id); }, enabled: hasLayer },
   { id: 'layer.align.left', label: 'Align Left Edges', run: () => L.alignLayers('left'), enabled: hasLayer },
@@ -233,7 +240,7 @@ export const ADJUSTMENT_KINDS: AdjustmentKind[] = ['develop', 'brightness-contra
 for (const k of ADJUSTMENT_KINDS) {
   COMMANDS.set(`adjlayer.${k}`, { id: `adjlayer.${k}`, label: `${ADJUSTMENT_LABELS[k]}…`, run: () => { L.newAdjustmentLayer(k); focusPanel('properties'); }, enabled: hasDoc });
   const destructiveKeys: Partial<Record<AdjustmentKind, string>> = { levels: 'Mod+L', curves: 'Mod+M', 'hue-saturation': 'Mod+U', 'color-balance': 'Mod+B', 'black-white': 'Mod+Alt+Shift+B' };
-  COMMANDS.set(`imageadj.${k}`, { id: `imageadj.${k}`, label: `${ADJUSTMENT_LABELS[k]}…`, shortcut: destructiveKeys[k], run: () => openDialog({ type: 'adjustment', kind: k }), enabled: hasLayer });
+  COMMANDS.set(`imageadj.${k}`, { id: `imageadj.${k}`, label: `${ADJUSTMENT_LABELS[k]}…`, shortcut: destructiveKeys[k], run: () => E.openAdjustmentDialog(k), enabled: hasLayer });
 }
 
 export const BLEND_MODES: { value: BlendMode; label: string }[][] = [

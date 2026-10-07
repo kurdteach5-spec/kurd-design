@@ -82,7 +82,8 @@ function writeHtml() {
     fs.writeFileSync(path.join(dist, 'kurd-design.html'), single);
     // body-only variant for hosts that supply their own document skeleton
     const fav = (html.match(/<link rel="icon"[^>]*>/) || [''])[0];
-    fs.writeFileSync(path.join(dist, 'kurd-design-embed.html'), `<title>KURD DESIGN</title>\n${fav}\n<style>${css}</style>\n<div id="root"></div>\n<script type="module">${js}</script>\n`);
+    const fontLink = (html.match(/<link rel="stylesheet" href="https:\/\/fonts[^>]*>/) || [''])[0];
+    fs.writeFileSync(path.join(dist, 'kurd-design-embed.html'), `<title>KURD DESIGN</title>\n${fav}\n${fontLink}\n<style>${css}</style>\n<div id="root"></div>\n<script type="module">${js}</script>\n`);
   }
 }
 

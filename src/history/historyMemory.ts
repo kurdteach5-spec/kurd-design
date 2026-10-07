@@ -7,6 +7,7 @@ export function collectCanvases(state: DocState, out = new Set<HTMLCanvasElement
       if (l.type === 'raster') out.add(l.canvas);
       if (l.mask) out.add(l.mask.canvas);
       if (l.type === 'group') walk(l.children);
+      if (l.type === 'smart') walk(l.contents.layers);
     }
   };
   walk(state.layers);

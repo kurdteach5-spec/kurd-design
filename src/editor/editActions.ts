@@ -1,4 +1,5 @@
 import type { Adjustment, DocState, Layer } from '../types/document';
+import { activeSmart, addSmartFilter } from './smartObjects';
 import { commit, getDocState, undo, redo } from '../state/documentStore';
 import { toast, withBusy, openDialog } from '../state/uiStore';
 import { useTools } from '../state/toolStore';
@@ -216,6 +217,8 @@ export function trimTransparent() {
 /** Destructive adjustment on the active pixel layer (respects the selection). */
 export function applyAdjustmentDestructive(adj: Adjustment, label: string) {
   const s = getDocState(); if (!s) return;
+  const smart = activeSmart(s);
+  if (smart) { addSmartFilter(smart.id, { kind: 'adjustment', adjustment: adj }, label); return; }
   const t = getPaintTarget(s); if (!t) return;
   const x = ctx2d(t.canvas, true);
   const img = x.getImageData(0, 0, t.canvas.width, t.canvas.height);
@@ -244,6 +247,8 @@ export function setLastFilter(f: typeof lastFilter) { lastFilter = f; }
 export async function applyFilter(id: string, params: Record<string, number | string | boolean>) {
   const s = getDocState(); if (!s) return;
   const def = filterById(id); if (!def) return;
+  const smart = activeSmart(s);
+  if (smart) { lastFilter = { id, params }; addSmartFilter(smart.id, { kind: 'filter', filter: id, params }, def.name); return; }
   const t = getPaintTarget(s); if (!t) return;
   lastFilter = { id, params };
   await withBusy(`Applying ${def.name}…`, async (progress) => {
@@ -263,6 +268,22 @@ export function repeatLastFilter() {
 
 export function openFilterDialog(id: string) {
   const s = getDocState(); if (!s) return;
-  if (!getPaintTarget(s)) return;
+  const smart = activeSmart(s);
+  if (smart) {
+    // smart objects get editable smart filters; filters without settings are added right away
+    const def = filterById(id);
+    if (def && !def.params.length) void applyFilter(id, {});
+    else openDialog({ type: 'smart-filter', layerId: smart.id, filter: id });
+    return;
+  }
+  if (!getPaintTarget(s, { next: { type: 'filter', filter: id } })) return;
   openDialog({ type: 'filter', filter: id });
+}
+
+export function openAdjustmentDialog(kind: string) {
+  const s = getDocState(); if (!s) return;
+  const smart = activeSmart(s);
+  if (smart) { openDialog({ type: 'smart-filter', layerId: smart.id, kind }); return; }
+  if (!getPaintTarget(s, { next: { type: 'adjustment', kind } })) return;
+  openDialog({ type: 'adjustment', kind });
 }

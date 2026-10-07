@@ -83,7 +83,7 @@ export function HistoryPanel() {
         ))}
       </div>
       <div className="flex items-center gap-2 px-3 h-9 border-t border-line-soft text-faint">
-        <span className="flex-1 num">{doc.history.length} states · {formatBytes(total)}</span>
+        <span className="flex-1 num">{`${doc.history.length} states · ${formatBytes(total)}`}</span>
         <button type="button" className="icon-btn" aria-label="Clear history" data-tip="Clear history (keeps the current state)" onClick={() => clearHistory()}><LuTrash2 size={14} /></button>
       </div>
     </div>

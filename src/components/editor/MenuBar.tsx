@@ -26,10 +26,11 @@ export const MENUS: MenuDef[] = [
     'layer.clip', '-', 'layer.group', 'layer.ungroup',
     { label: 'Arrange', items: ['layer.front', 'layer.forward', 'layer.backward', 'layer.back'] },
     { label: 'Align', items: ['layer.align.left', 'layer.align.hcenter', 'layer.align.right', '-', 'layer.align.top', 'layer.align.vcenter', 'layer.align.bottom', '-', 'layer.distribute.h', 'layer.distribute.v'] },
+    '-', { label: 'Smart Objects', items: ['layer.smart.convert', 'layer.smart.edit', '-', 'layer.smart.rasterize'] }, 'layer.editText',
     '-', 'layer.mergeDown', 'layer.mergeVisible', 'layer.flatten', 'layer.rasterize', '-', 'layer.lock', 'layer.hide', 'layer.toSelection', '-', 'layer.selectUp', 'layer.selectDown'] },
   { label: 'Select', items: ['select.all', 'select.none', 'select.reselect', 'select.inverse', 'select.allLayers', '-', 'select.colorRange',
     { label: 'Modify', items: ['select.feather', 'select.expand', 'select.contract', 'select.border'] }, 'select.transform', '-', 'select.toMask', 'select.fromMask'] },
-  { label: 'Filter', items: ['filter.last', '-', ...filterGroups, '-', 'filter.dropShadow', 'filter.outerGlow'] },
+  { label: 'Filter', items: ['filter.last', 'filter.convertSmart', '-', ...filterGroups, '-', 'filter.dropShadow', 'filter.outerGlow'] },
   { label: 'View', items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.fill', 'view.100', 'view.200', 'view.center', '-', 'view.rotLeft', 'view.rotRight', 'view.rotReset', '-',
     'view.rulers', 'view.grid', 'view.guides', 'view.pixelGrid', 'view.extras', 'view.snap', '-', 'view.newGuide', 'view.guideCenter', 'view.clearGuides', 'view.gridSettings'] },
   { label: 'Window', items: ['window.layers', 'window.properties', 'window.color', 'window.swatches', 'window.history', 'window.adjustments', 'window.brush', 'window.character', 'window.paragraph', '-', 'window.docked', 'window.reset'] },
@@ -54,7 +55,7 @@ function MenuList({ items, onDone, depth = 0 }: { items: Entry[]; onDone: () => 
           e.preventDefault(); e.stopPropagation();
           const pos = actionable.indexOf(active); const n = actionable.length;
           setActive(actionable[(pos + (e.key === 'ArrowDown' ? 1 : -1) + n) % n]); setSub(null);
-        } else if (e.key === 'Enter' || (e.key === 'ArrowRight' && typeof items[active] === 'object')) { e.preventDefault(); e.stopPropagation(); if (active >= 0) activate(active); }
+        } else if (e.key === 'Enter' || (e.key === (document.documentElement.dir === 'rtl' ? 'ArrowLeft' : 'ArrowRight') && typeof items[active] === 'object')) { e.preventDefault(); e.stopPropagation(); if (active >= 0) activate(active); }
       }}>
       {items.map((e, i) => {
         if (e === '-') return <div key={i} className="menu-sep" role="separator" />;
@@ -62,9 +63,9 @@ function MenuList({ items, onDone, depth = 0 }: { items: Entry[]; onDone: () => 
           return (
             <div key={i} className="relative" onMouseEnter={() => { setActive(i); setSub(i); }}>
               <div className="menu-item" role="menuitem" aria-haspopup="menu" aria-expanded={sub === i} data-active={active === i}>
-                <span className="w-3.5" /><span className="flex-1">{e.label}</span><LuChevronRight size={13} />
+                <span className="w-3.5" /><span className="flex-1">{e.label}</span><LuChevronRight size={13} className="rtl:-scale-x-100" />
               </div>
-              {sub === i && <div className="absolute left-full -top-1 ml-0.5 z-10"><MenuList items={e.items} onDone={onDone} depth={depth + 1} /></div>}
+              {sub === i && <div className="absolute start-full -top-1 ms-0.5 z-10"><MenuList items={e.items} onDone={onDone} depth={depth + 1} /></div>}
             </div>
           );
         }
@@ -76,7 +77,7 @@ function MenuList({ items, onDone, depth = 0 }: { items: Entry[]; onDone: () => 
             onMouseEnter={() => { setActive(i); setSub(null); }} onClick={() => activate(i)}>
             <span className="w-3.5 inline-flex">{checked && <LuCheck size={13} />}</span>
             <span className="flex-1">{c.label}</span>
-            {c.shortcut && <span aria-hidden className={`text-2xs ml-6 ${active === i && enabled ? 'text-white/80' : 'text-faint'}`}>{formatShortcut(c.shortcut)}</span>}
+            {c.shortcut && <span aria-hidden dir="ltr" className={`text-2xs ms-6 ${active === i && enabled ? 'text-white/80' : 'text-faint'}`}>{formatShortcut(c.shortcut)}</span>}
           </div>
         );
       })}
@@ -93,8 +94,10 @@ export function MenuBar() {
     const down = (e: PointerEvent) => { if (!bar.current?.contains(e.target as Node)) setOpen(null); };
     const key = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { e.stopPropagation(); setOpen(null); }
-      if (e.key === 'ArrowRight' && !(e.target as HTMLElement).closest?.('[aria-haspopup]')) setOpen((o) => (o === null ? o : (o + 1) % MENUS.length));
-      if (e.key === 'ArrowLeft') setOpen((o) => (o === null ? o : (o - 1 + MENUS.length) % MENUS.length));
+      const rtl = document.documentElement.dir === 'rtl';
+      const next = rtl ? 'ArrowLeft' : 'ArrowRight', prev = rtl ? 'ArrowRight' : 'ArrowLeft';
+      if (e.key === next && !(e.target as HTMLElement).closest?.('[aria-haspopup]')) setOpen((o) => (o === null ? o : (o + 1) % MENUS.length));
+      if (e.key === prev) setOpen((o) => (o === null ? o : (o - 1 + MENUS.length) % MENUS.length));
     };
     window.addEventListener('pointerdown', down, true); window.addEventListener('keydown', key, true);
     return () => { window.removeEventListener('pointerdown', down, true); window.removeEventListener('keydown', key, true); };
@@ -108,7 +111,7 @@ export function MenuBar() {
             onPointerDown={(e) => { e.preventDefault(); setOpen(open === i ? null : i); }}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); setOpen(i); } }}
             onMouseEnter={() => { if (open !== null) setOpen(i); }}>{m.label}</button>
-          {open === i && <div className="absolute left-0 top-full mt-0.5 z-50"><MenuList items={m.items} onDone={() => setOpen(null)} /></div>}
+          {open === i && <div className="absolute start-0 top-full mt-0.5 z-50"><MenuList items={m.items} onDone={() => setOpen(null)} /></div>}
         </div>
       ))}
     </div>

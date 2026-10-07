@@ -52,6 +52,7 @@ export function TextEditorOverlay() {
     <textarea
       ref={ref}
       aria-label="Edit text"
+      dir="auto"
       spellCheck={false}
       defaultValue={layer?.text ?? ''}
       className="absolute left-0 top-0 resize-none border-0 p-0 m-0 bg-transparent overflow-hidden outline-none"

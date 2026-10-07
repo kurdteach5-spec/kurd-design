@@ -45,19 +45,19 @@ export function NewDocumentDialog() {
     <Dialog title="New document" onClose={closeDialog} onSubmit={submit} width={640}
       footer={<><span className="flex-1 text-muted num">{err ?? `${pw} × ${ph} px · ${formatBytes(pw * ph * 4)} per layer`}</span><button className="btn" onClick={closeDialog}>Cancel</button><button className="btn btn-primary" disabled={!!err} onClick={submit}>Create</button></>}>
       <div className="grid grid-cols-[200px_1fr] gap-5">
-        <div className="flex flex-col gap-0.5 max-h-[360px] overflow-y-auto pr-1" role="listbox" aria-label="Presets">
+        <div className="flex flex-col gap-0.5 max-h-[360px] overflow-y-auto pe-1" role="listbox" aria-label="Presets">
           {(['Social', 'Print', 'Screen'] as const).map((g) => (
             <div key={g} className="flex flex-col gap-0.5">
               <div className="text-faint px-2 pt-2 pb-1">{g}</div>
               {PRESETS.filter((p) => p.group === g).map((p) => (
                 <button type="button" key={p.id} role="option" aria-selected={preset === p.id} onClick={() => pick(p.id)}
-                  className={`text-left px-2 py-1.5 rounded-[4px] ${preset === p.id ? 'bg-accent-soft text-ink-strong' : 'hover:bg-hover'}`}>
+                  className={`text-start px-2 py-1.5 rounded-[4px] ${preset === p.id ? 'bg-accent-soft text-ink-strong' : 'hover:bg-hover'}`}>
                   <div>{p.name}</div><div className="text-faint num text-2xs">{p.width} × {p.height}</div>
                 </button>
               ))}
             </div>
           ))}
-          <button type="button" role="option" aria-selected={preset === 'custom'} onClick={() => setPreset('custom')} className={`text-left px-2 py-1.5 rounded-[4px] mt-1 ${preset === 'custom' ? 'bg-accent-soft text-ink-strong' : 'hover:bg-hover'}`}>Custom</button>
+          <button type="button" role="option" aria-selected={preset === 'custom'} onClick={() => setPreset('custom')} className={`text-start px-2 py-1.5 rounded-[4px] mt-1 ${preset === 'custom' ? 'bg-accent-soft text-ink-strong' : 'hover:bg-hover'}`}>Custom</button>
         </div>
         <div className="flex flex-col gap-3">
           <Row label="Name"><input className="field w-full" value={name} onChange={(e) => setName(e.target.value)} data-autofocus /></Row>
@@ -101,7 +101,7 @@ export function ImageSizeDialog() {
       <Row label="Width"><NumberField value={w} min={1} unit="px" width={90} onChange={(v) => { setW(v); if (lock) setH(Math.max(1, Math.round((v * s.height) / s.width))); }} /><span className="text-faint num">{Math.round((w / s.width) * 100)}%</span></Row>
       <Row label="Height"><NumberField value={h} min={1} unit="px" width={90} onChange={(v) => { setH(v); if (lock) setW(Math.max(1, Math.round((v * s.width) / s.height))); }} /><span className="text-faint num">{Math.round((h / s.height) * 100)}%</span></Row>
       <Row label=""><Checkbox label="Constrain proportions" checked={lock} onChange={setLock} /></Row>
-      <Row label="Resolution"><NumberField value={dpi} min={1} max={2400} width={90} onChange={setDpi} /><span className="text-muted">ppi · {(w / dpi).toFixed(2)} × {(h / dpi).toFixed(2)} in</span></Row>
+      <Row label="Resolution"><NumberField value={dpi} min={1} max={2400} width={90} onChange={setDpi} /><span className="text-muted">{`ppi · ${(w / dpi).toFixed(2)} × ${(h / dpi).toFixed(2)} in`}</span></Row>
       <Row label=""><Checkbox label="Resample pixel layers" checked={resample} onChange={setResample} title="Off keeps original pixels and scales them through the layer transform" /></Row>
       <div className="text-faint">Text and shape layers stay sharp at any size.</div>
       {err && <div className="text-danger">{err}</div>}
@@ -124,15 +124,16 @@ export function CanvasSizeDialog() {
     requestAnimationFrame(() => getEngine()?.fit());
   };
   const anchors: Anchor[] = ['tl', 't', 'tr', 'l', 'c', 'r', 'bl', 'b', 'br'];
+  const anchorName: Record<Anchor, string> = { tl: 'Top left', t: 'Top', tr: 'Top right', l: 'Left', c: 'Center', r: 'Right', bl: 'Bottom left', b: 'Bottom', br: 'Bottom right' };
   return (
     <Dialog title="Canvas size" onClose={closeDialog} onSubmit={submit}>
-      <div className="text-muted num">Current: {s.width} × {s.height} px</div>
+      <div className="text-muted num">{`Current: ${s.width} × ${s.height} px`}</div>
       <Row label="Width"><NumberField value={w} min={rel ? -s.width + 1 : 1} unit="px" width={90} onChange={setW} /></Row>
       <Row label="Height"><NumberField value={h} min={rel ? -s.height + 1 : 1} unit="px" width={90} onChange={setH} /></Row>
       <Row label=""><Checkbox label="Relative" checked={rel} onChange={(v) => { setRel(v); setW(v ? 0 : s.width); setH(v ? 0 : s.height); }} /></Row>
       <Row label="Anchor">
-        <div className="grid grid-cols-3 gap-1" role="radiogroup" aria-label="Anchor">
-          {anchors.map((a) => <button type="button" key={a} role="radio" aria-checked={anchor === a} aria-label={`Anchor ${a}`} onClick={() => setAnchor(a)} className={`w-6 h-6 rounded-[3px] border ${anchor === a ? 'bg-accent border-accent' : 'border-line hover:bg-hover'}`} />)}
+        <div className="grid grid-cols-3 gap-1" role="radiogroup" aria-label="Anchor" dir="ltr">
+          {anchors.map((a) => <button type="button" key={a} role="radio" aria-checked={anchor === a} aria-label={`Anchor: ${anchorName[a]}`} onClick={() => setAnchor(a)} className={`w-6 h-6 rounded-[3px] border ${anchor === a ? 'bg-accent border-accent' : 'border-line hover:bg-hover'}`} />)}
         </div>
       </Row>
       <Row label="Extension color"><Select value={ext} onChange={setExt} options={[{ value: 'white', label: 'White' }, { value: 'black', label: 'Black' }, { value: 'background', label: 'Background color' }, { value: 'transparent', label: 'Transparent' }]} /></Row>
@@ -165,7 +166,7 @@ export function ExportDialog() {
       footer={<><span className="flex-1 text-muted num">{format === 'psd' ? `${s.width} × ${s.height} px · layered` : `${w} × ${h} px`}</span><button className="btn" onClick={closeDialog}>Cancel</button><button className="btn btn-primary" onClick={() => void submit()}>Export</button></>}>
       <div className="grid grid-cols-[1fr_220px] gap-5">
         <div className="flex flex-col gap-3">
-          <Row label="Format"><Select value={format} onChange={setFormat} options={[{ value: 'png', label: 'PNG' }, { value: 'jpg', label: 'JPG' }, { value: 'webp', label: 'WEBP' }, { value: 'svg', label: 'SVG (vector where possible)' }, { value: 'pdf', label: 'PDF' }, { value: 'psd', label: 'PSD (layered)' }]} /></Row>
+          <Row label="Format"><Select value={format} width="100%" onChange={setFormat} options={[{ value: 'png', label: 'PNG' }, { value: 'jpg', label: 'JPG' }, { value: 'webp', label: 'WEBP' }, { value: 'svg', label: 'SVG (vector where possible)' }, { value: 'pdf', label: 'PDF' }, { value: 'psd', label: 'PSD (layered)' }]} /></Row>
           {format !== 'psd' && <>
             <Row label="Scale"><NumberField value={scale} min={1} max={800} unit="%" width={80} onChange={setScale} />
               <Select value={String([25, 50, 100, 200, 300].includes(scale) ? scale : '')} onChange={(v) => v && setScale(Number(v))} options={[{ value: '', label: 'Preset…' }, { value: '25', label: '0.25×' }, { value: '50', label: '0.5×' }, { value: '100', label: '1×' }, { value: '200', label: '2×' }, { value: '300', label: '3×' }]} /></Row>
@@ -209,7 +210,7 @@ export function ConfirmCloseDialog({ docId }: { docId: string }) {
     <Dialog title="Save changes?" onClose={closeDialog}
       footer={<><button className="btn btn-danger" onClick={() => { closeDialog(); closeNow(docId); }}>Don’t save</button><div className="flex-1" /><button className="btn" onClick={closeDialog}>Cancel</button>
         <button className="btn btn-primary" onClick={async () => { closeDialog(); const prev = getDoc()?.id; if (prev !== docId) (await import('../../state/documentStore')).setActiveDocument(docId); if (await saveToProjects()) closeNow(docId); }}>Save</button></>}>
-      <div>“{d.name}” has unsaved changes. Save it to Projects before closing?</div>
+      <div>{d.smartLink ? `Apply your changes to the smart object “${d.name}” before closing?` : `“${d.name}” has unsaved changes. Save it to Projects before closing?`}</div>
     </Dialog>
   );
 }

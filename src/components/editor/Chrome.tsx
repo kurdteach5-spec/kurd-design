@@ -3,12 +3,13 @@ import { useDocuments, selectActiveDoc, selectActiveState, isDirty, setActiveDoc
 import { useCursor, useUI } from '../../state/uiStore';
 import { useTools } from '../../state/toolStore';
 import { getEngine, MIN_ZOOM, MAX_ZOOM } from '../../canvas/engine';
-import { requestClose } from '../../editor/fileActions';
+import { requestClose, closeNow } from '../../editor/fileActions';
+import { pushSmartContents } from '../../editor/smartObjects';
 import { toolLabel } from '../../tools/registry';
 import { allLayers } from '../../layers/tree';
 import { formatBytes } from '../../utils/id';
 import { openDialog } from '../../state/uiStore';
-import { LuX, LuPlus, LuCircleAlert, LuCircleCheck, LuInfo, LuTriangleAlert, LuRotateCcw } from 'react-icons/lu';
+import { LuX, LuPlus, LuCircleAlert, LuCircleCheck, LuInfo, LuTriangleAlert, LuRotateCcw, LuBox } from 'react-icons/lu';
 
 export function DocumentTabs() {
   const order = useDocuments((s) => s.order);
@@ -23,10 +24,11 @@ export function DocumentTabs() {
         const z = Math.round((d.view.zoom || 1) * 100);
         return (
           <div key={id} role="tab" aria-selected={on} tabIndex={0}
-            className={`group flex items-center gap-2 h-[28px] pl-3 pr-1.5 rounded-t-[5px] cursor-default shrink-0 max-w-[260px] ${on ? 'bg-surround text-ink-strong' : 'bg-[#22262b] text-muted hover:text-ink'}`}
+            className={`group flex items-center gap-2 h-[28px] ps-3 pe-1.5 rounded-t-[5px] cursor-default shrink-0 max-w-[260px] ${on ? 'bg-surround text-ink-strong' : 'bg-[#22262b] text-muted hover:text-ink'}`}
             onClick={() => { setActiveDocument(id); useUI.setState({ showHome: false }); }}
             onKeyDown={(e) => { if (e.key === 'Enter') { setActiveDocument(id); useUI.setState({ showHome: false }); } }}
             onAuxClick={(e) => { if (e.button === 1) requestClose(id); }}>
+            {d.smartLink && <LuBox size={12} className="text-accent shrink-0" aria-label="Smart object contents" />}
             <span className="truncate">{d.name}</span>
             <span className="text-faint num shrink-0">{z}% · {st.colorMode === 'rgb' ? 'RGB' : 'Gray'}</span>
             <button type="button" className="w-5 h-5 rounded-[3px] flex items-center justify-center hover:bg-hover shrink-0" aria-label={`Close ${d.name}`} onClick={(e) => { e.stopPropagation(); requestClose(id); }}>
@@ -36,7 +38,7 @@ export function DocumentTabs() {
           </div>
         );
       })}
-      <button type="button" className="icon-btn mb-0.5 ml-1" aria-label="New document" data-tip="New document" onClick={() => openDialog({ type: 'new-document' })}><LuPlus size={14} /></button>
+      <button type="button" className="icon-btn mb-0.5 ms-1" aria-label="New document" data-tip="New document" onClick={() => openDialog({ type: 'new-document' })}><LuPlus size={14} /></button>
     </div>
   );
 }
@@ -54,14 +56,14 @@ export function StatusBar() {
   const mem = st.width * st.height * 4;
   return (
     <div className="flex items-center h-full gap-4 px-2 text-muted num whitespace-nowrap overflow-hidden">
-      <input className="field h-[20px] w-[64px] text-right" value={zoomText} aria-label="Zoom level"
+      <input className="field h-[20px] w-[64px] text-end" value={zoomText} aria-label="Zoom level"
         onChange={(e) => setZoomText(e.target.value)} onFocus={(e) => e.currentTarget.select()}
         onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') { setZoomText(`${zoom}%`); e.currentTarget.blur(); } }}
         onBlur={(e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) getEngine()?.zoomAt(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, v / 100))); else setZoomText(`${zoom}%`); }} />
-      <span data-tip="Canvas size">{st.width} × {st.height} px · {st.dpi} ppi</span>
+      <span data-tip="Canvas size" dir="ltr">{`${st.width} × ${st.height} px · ${st.dpi} ppi`}</span>
       <span className="w-[120px]" data-tip="Cursor position">{cursor.x !== null ? `X ${cursor.x}  Y ${cursor.y}` : 'X –  Y –'}</span>
-      <span className="hidden md:inline">{layers} {layers === 1 ? 'layer' : 'layers'} · {formatBytes(mem)}</span>
-      {st.selection && <span className="hidden lg:inline text-[#9cc0ff]">Selection {Math.round(st.selection.bounds.w)} × {Math.round(st.selection.bounds.h)}</span>}
+      <span className="hidden md:inline">{`${layers} ${layers === 1 ? 'layer' : 'layers'} · ${formatBytes(mem)}`}</span>
+      {st.selection && <span className="hidden lg:inline text-[#9cc0ff]">{`Selection ${Math.round(st.selection.bounds.w)} × ${Math.round(st.selection.bounds.h)}`}</span>}
       {doc.view.rotation !== 0 && (
         <button type="button" className="inline-flex items-center gap-1 text-amber hover:text-ink" onClick={() => getEngine()?.rotateView(0, true)} aria-label="Reset view rotation">
           <LuRotateCcw size={12} />{Math.round(doc.view.rotation)}°
@@ -120,4 +122,21 @@ export class ErrorBoundary extends Component<{ children: ReactNode; label: strin
     }
     return this.props.children;
   }
+}
+
+/** Shown while editing a smart object's contents in its own tab. */
+export function SmartContentsBar() {
+  const doc = useDocuments(selectActiveDoc);
+  const parentName = useDocuments((s) => (doc?.smartLink ? s.docs[doc.smartLink.parentDocId]?.name ?? null : null));
+  if (!doc?.smartLink) return null;
+  const dirty = isDirty(doc);
+  return (
+    <div className="h-[30px] shrink-0 flex items-center gap-2 px-3 bg-[#23324a] border-b border-[#35507a] text-ink" role="status">
+      <LuBox size={14} className="text-accent shrink-0" />
+      <span className="truncate min-w-0">{parentName ? `Editing smart object contents. Save (Ctrl/Cmd+S) to update it in “${parentName}”.` : 'The original document of this smart object is closed.'}</span>
+      <div className="flex-1" />
+      <button type="button" className="btn h-[22px]" disabled={!dirty || !parentName} onClick={() => pushSmartContents(doc.id)}>Save to smart object</button>
+      <button type="button" className="btn btn-primary h-[22px]" onClick={() => { if (!dirty || pushSmartContents(doc.id)) { const p = doc.smartLink!.parentDocId; closeNow(doc.id); if (useDocuments.getState().docs[p]) setActiveDocument(p); } }}>Done</button>
+    </div>
+  );
 }

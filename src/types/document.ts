@@ -143,9 +143,30 @@ export interface GroupLayer extends LayerBase {
   expanded: boolean;
 }
 
-export type Layer = RasterLayer | TextLayer | ShapeLayer | AdjustmentLayer | GroupLayer;
+/** A non-destructive filter or adjustment stored on a smart object. */
+export type SmartFilter =
+  | { id: string; kind: 'filter'; filter: string; params: Record<string, number | string | boolean>; enabled: boolean }
+  | { id: string; kind: 'adjustment'; adjustment: Adjustment; enabled: boolean };
+
+/** The embedded document inside a smart object (like a .psb inside a .psd). */
+export interface SmartContents { width: number; height: number; dpi: number; layers: Layer[] }
+
+/**
+ * Smart object: wraps layers (text, shapes, photos…) as one layer that can be scaled, rotated and
+ * filtered without losing the original. Edit Contents opens the embedded layers in their own tab.
+ */
+export interface SmartObjectLayer extends LayerBase {
+  type: 'smart';
+  contents: SmartContents;
+  /** maps contents space (0..width, 0..height) → document space */
+  transform: Matrix;
+  filters: SmartFilter[];
+  filtersEnabled: boolean;
+}
+
+export type Layer = RasterLayer | TextLayer | ShapeLayer | AdjustmentLayer | GroupLayer | SmartObjectLayer;
 export type LayerType = Layer['type'];
-export type TransformableLayer = RasterLayer | TextLayer | ShapeLayer;
+export type TransformableLayer = RasterLayer | TextLayer | ShapeLayer | SmartObjectLayer;
 
 /** Selection is an immutable doc-sized alpha mask. */
 export interface Selection {
@@ -185,6 +206,8 @@ export interface HistoryEntry {
 
 export interface EditorDocument {
   id: string;
+  /** Set when this tab is the contents of a smart object in another document. */
+  smartLink?: { parentDocId: string; layerId: string };
   name: string;
   projectId: string;
   history: HistoryEntry[];

@@ -11,6 +11,7 @@ export type DialogDescriptor =
   | { type: 'export' }
   | { type: 'filter'; filter: string }
   | { type: 'adjustment'; kind: string }
+  | { type: 'smart-filter'; layerId: string; filter?: string; kind?: string; index?: number }
   | { type: 'layer-style'; layerId: string; tab?: string }
   | { type: 'selection-modify'; op: 'feather' | 'expand' | 'contract' | 'border' }
   | { type: 'grid-settings' }
@@ -21,6 +22,7 @@ export type DialogDescriptor =
   | { type: 'save-as' }
   | { type: 'confirm-close'; docId: string }
   | { type: 'rename-layer'; layerId: string }
+  | { type: 'confirm-rasterize'; layerId: string; next?: DialogDescriptor }
   | { type: 'color-picker'; target: 'foreground' | 'background' }
   | { type: 'new-guide' };
 

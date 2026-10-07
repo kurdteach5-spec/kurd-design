@@ -127,7 +127,7 @@ export async function exportSvg(state: DocState, o: ExportOptions): Promise<Blob
       if (!l.visible || l.type === 'adjustment') continue;
       const style = `${l.opacity < 1 ? ` opacity="${+l.opacity.toFixed(3)}"` : ''}${l.blendMode !== 'normal' && l.blendMode !== 'pass-through' ? ` style="mix-blend-mode:${l.blendMode}"` : ''}`;
       if (l.type === 'group') { const inner: string[] = []; await emit(l.children, inner); out.push(`<g id="${esc(l.name)}"${style}>${inner.join('')}</g>`); continue; }
-      if (!canBeVector(l) || l.type === 'raster') {
+      if (!canBeVector(l) || (l.type !== 'shape' && l.type !== 'text')) {
         const c = sharedCompositor.renderLayer(state, l);
         out.push(`<image id="${esc(l.name)}" width="${W}" height="${H}" href="${await dataUrl(c)}"${style}/>`);
         continue;

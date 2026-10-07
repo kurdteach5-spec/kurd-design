@@ -1,4 +1,5 @@
-import type { AdjustmentLayer, BlendMode, DocState, Layer } from '../types/document';
+import type { AdjustmentLayer, BlendMode, DocState, Layer, SmartContents, SmartObjectLayer } from '../types/document';
+import { filterKernel } from '../filters/kernel';
 import { createCanvas, ctx2d } from '../utils/canvas';
 import { objId } from '../utils/id';
 import { drawText } from './textRender';
@@ -48,6 +49,7 @@ export function drawLayerContent(x: CanvasRenderingContext2D, l: Layer, alpha = 
   x.globalAlpha *= alpha;
   if (l.type === 'raster') { x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.drawImage(l.canvas, 0, 0); }
   else if (l.type === 'text') drawText(x, l);
+  else if (l.type === 'smart') { x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.drawImage(smartContentCanvas(l), 0, 0); }
   else drawShape(x, l);
   x.restore();
 }
@@ -300,4 +302,41 @@ export function toGrayscale(c: HTMLCanvasElement) {
   const x = ctx2d(c); const img = x.getImageData(0, 0, c.width, c.height); const d = img.data;
   for (let i = 0; i < d.length; i += 4) { const v = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; d[i] = d[i + 1] = d[i + 2] = v; }
   x.putImageData(img, 0, 0);
+}
+
+// ---------------- Smart objects ----------------
+const smartBase = new WeakMap<SmartContents, HTMLCanvasElement>();
+const smartFiltered = new WeakMap<SmartContents, { key: string; canvas: HTMLCanvasElement }>();
+let kernel: ReturnType<typeof filterKernel> | null = null;
+
+/** Renders a smart object's embedded layers at their original resolution (cached per contents). */
+export function smartBaseCanvas(contents: SmartContents): HTMLCanvasElement {
+  let base = smartBase.get(contents);
+  if (!base) {
+    const st: DocState = { width: contents.width, height: contents.height, dpi: contents.dpi, colorMode: 'rgb', layers: contents.layers, activeLayerId: null, selectedLayerIds: [], editTarget: 'content', selection: null, guides: [] };
+    base = new Compositor().render(st, createCanvas(contents.width, contents.height), { fullQuality: true });
+    smartBase.set(contents, base);
+  }
+  return base;
+}
+
+/** Smart object pixels: contents with the enabled smart filters applied (cached until either changes). */
+export function smartContentCanvas(l: SmartObjectLayer): HTMLCanvasElement {
+  const base = smartBaseCanvas(l.contents);
+  const active = l.filtersEnabled ? l.filters.filter((f) => f.enabled) : [];
+  if (!active.length) return base;
+  const key = JSON.stringify(active.map((f) => (f.kind === 'filter' ? [f.filter, f.params] : [f.adjustment])));
+  const hit = smartFiltered.get(l.contents);
+  if (hit && hit.key === key) return hit.canvas;
+  const w = base.width, h = base.height;
+  const img = ctx2d(base, true).getImageData(0, 0, w, h);
+  for (const f of active) {
+    try {
+      if (f.kind === 'filter') { kernel ??= filterKernel(); kernel.run(f.filter, img.data, w, h, f.params, () => {}); }
+      else applyAdjustment(img.data, w, h, f.adjustment);
+    } catch (e) { console.warn('Smart filter failed', e); }
+  }
+  const out = createCanvas(w, h); ctx2d(out).putImageData(img, 0, 0);
+  smartFiltered.set(l.contents, { key, canvas: out });
+  return out;
 }
