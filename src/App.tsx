@@ -10,12 +10,18 @@ import { DialogHost } from './components/dialogs/DialogHost';
 import { Logo } from './components/dialogs/EditDialogs';
 import { TooltipHost } from './components/ui/controls';
 import { LanguageMenu } from './components/ui/LanguageMenu';
-import { useWorkspace, setWorkspace, isMotion } from './state/workspace';
+import { useWorkspace, setWorkspace, isMotion, isPodcast, isDesign, isMixer } from './state/workspace';
+import { PodcastWorkspace } from './podcast/ui/PodcastWorkspace';
+import { MixerWorkspace } from './podcast/ui/mixer/MixerWorkspace';
+import { ShortcutsDialog } from './podcast/ui/ShortcutsDialog';
+import { addMedia } from './podcast/mixer';
+import { addPodcastFiles } from './podcast/store';
+import { stopAll as stopPodcast } from './podcast/player';
 import { MotionWorkspace } from './motion/ui/MotionWorkspace';
 import { MotionMenuBar } from './motion/ui/MotionMenuBar';
 import { importFiles as importMotionFiles } from './motion/actions';
 import { pause as pauseMotion } from './motion/media/playback';
-import { LuImage, LuClapperboard } from 'react-icons/lu';
+import { LuImage, LuClapperboard, LuPodcast, LuSlidersVertical } from 'react-icons/lu';
 import { useUI } from './state/uiStore';
 import { useDocuments } from './state/documentStore';
 import { installKeyboard } from './shortcuts/keyboard';
@@ -33,7 +39,7 @@ export function App() {
   useEffect(() => {
     initFonts();
     const offKeys = installKeyboard();
-    const paste = (e: ClipboardEvent) => { if (isMotion() || isEditable(e.target) || useUI.getState().dialog) return; void handlePasteEvent(e); };
+    const paste = (e: ClipboardEvent) => { if (!isDesign() || isEditable(e.target) || useUI.getState().dialog) return; void handlePasteEvent(e); };
     window.addEventListener('paste', paste);
     // dropping files on the home screen / anywhere outside the canvas
     const over = (e: DragEvent) => { if (e.dataTransfer?.types.includes('Files')) { e.preventDefault(); if (!useUI.getState().dropActive) useUI.setState({ dropActive: true }); } };
@@ -42,6 +48,8 @@ export function App() {
       e.preventDefault(); useUI.setState({ dropActive: false });
       const files = [...(e.dataTransfer?.files ?? [])]; if (!files.length) return;
       if (isMotion()) { void importMotionFiles(files); return; }
+      if (isPodcast()) { void addPodcastFiles(files); return; }
+      if (isMixer()) { const img = files.filter((f) => f.type.startsWith('image/')); if (img.length) void addMedia(img); const rest = files.filter((f) => !f.type.startsWith('image/')); if (rest.length) void addPodcastFiles(rest); return; }
       if (useUI.getState().showHome || !useDocuments.getState().order.length) void openFiles(files); else void importAsLayers(files);
     };
     const leave = (e: DragEvent) => { if (!e.relatedTarget) useUI.setState({ dropActive: false }); };
@@ -62,13 +70,15 @@ export function App() {
           <Logo size={20} /><span className="font-bold text-ink-strong hidden xl:inline tracking-[0.06em] whitespace-nowrap">KURD <span className="text-accent">DESIGN</span></span>
         </button>
         <div className="flex items-center rounded-[6px] border border-line overflow-hidden shrink-0 mx-1" role="radiogroup" aria-label="Workspace">
-          <button type="button" role="radio" aria-checked={mode === 'design'} aria-label="Design" className={`h-[24px] px-2 sm:px-2.5 text-xs inline-flex items-center gap-1.5 ${mode === 'design' ? 'bg-accent text-white' : 'text-muted hover:text-ink hover:bg-hover'}`} onClick={() => { pauseMotion(); setWorkspace('design'); }} data-tip="Photo editing & graphic design"><LuImage size={13} /><span className="hidden sm:inline">Design</span></button>
-          <button type="button" role="radio" aria-checked={mode === 'motion'} aria-label="Motion" className={`h-[24px] px-2 sm:px-2.5 text-xs inline-flex items-center gap-1.5 ${mode === 'motion' ? 'bg-accent text-white' : 'text-muted hover:text-ink hover:bg-hover'}`} onClick={() => setWorkspace('motion')} data-tip="Motion graphics, animation & video"><LuClapperboard size={13} /><span className="hidden sm:inline">Motion</span></button>
+          <button type="button" role="radio" aria-checked={mode === 'design'} aria-label="Design" className={`h-[24px] px-2 sm:px-2.5 text-xs inline-flex items-center gap-1.5 ${mode === 'design' ? 'bg-accent text-white' : 'text-muted hover:text-ink hover:bg-hover'}`} onClick={() => { pauseMotion(); stopPodcast(); setWorkspace('design'); }} data-tip="Photo editing & graphic design"><LuImage size={13} /><span className="hidden sm:inline">Design</span></button>
+          <button type="button" role="radio" aria-checked={mode === 'motion'} aria-label="Motion" className={`h-[24px] px-2 sm:px-2.5 text-xs inline-flex items-center gap-1.5 ${mode === 'motion' ? 'bg-accent text-white' : 'text-muted hover:text-ink hover:bg-hover'}`} onClick={() => { stopPodcast(); setWorkspace('motion'); }} data-tip="Motion graphics, animation & video"><LuClapperboard size={13} /><span className="hidden sm:inline">Motion</span></button>
+          <button type="button" role="radio" aria-checked={mode === 'podcast'} aria-label="Podcast" className={`h-[24px] px-2 sm:px-2.5 text-xs inline-flex items-center gap-1.5 ${mode === 'podcast' ? 'bg-accent text-white' : 'text-muted hover:text-ink hover:bg-hover'}`} onClick={() => { pauseMotion(); stopPodcast(); setWorkspace('podcast'); }} data-tip="Multicam podcast & interview editing"><LuPodcast size={13} /><span className="hidden sm:inline">Podcast</span></button>
+          <button type="button" role="radio" aria-checked={mode === 'mixer'} aria-label="Vision Mixer" className={`h-[24px] px-2 sm:px-2.5 text-xs inline-flex items-center gap-1.5 ${mode === 'mixer' ? 'bg-accent text-white' : 'text-muted hover:text-ink hover:bg-hover'}`} onClick={() => { pauseMotion(); stopPodcast(); setWorkspace('mixer'); }} data-tip="Live vision mixer (switcher) for the podcast cameras"><LuSlidersVertical size={13} /><span className="hidden sm:inline">Mixer</span></button>
         </div>
-        <div className="h-full py-[3px] min-w-0 flex-1 overflow-x-auto overflow-y-hidden no-scrollbar">{mode === 'motion' ? <MotionMenuBar /> : <MenuBar />}</div>
+        <div className="h-full py-[3px] min-w-0 flex-1 overflow-x-auto overflow-y-hidden no-scrollbar">{mode === 'motion' ? <MotionMenuBar /> : mode === 'podcast' ? <div className="h-full hidden md:flex items-center px-2 text-xs text-muted whitespace-nowrap">Multicam podcast editor · automatic cuts</div> : mode === 'mixer' ? <div className="h-full hidden md:flex items-center px-2 text-xs text-muted whitespace-nowrap">Vision mixer · live switching, keys, SuperSource, multiview</div> : <MenuBar />}</div>
         <div className="h-full shrink-0"><LanguageMenu /></div>
       </header>
-      {mode === 'motion' ? <div className="min-h-0 min-w-0" style={{ gridRow: '2 / 5' }}><MotionWorkspace /></div> : <>
+      {mode === 'podcast' ? <div className="min-h-0 min-w-0" style={{ gridRow: '2 / 5' }}><PodcastWorkspace /></div> : mode === 'mixer' ? <div className="min-h-0 min-w-0" style={{ gridRow: '2 / 5' }}><MixerWorkspace /></div> : mode === 'motion' ? <div className="min-h-0 min-w-0" style={{ gridRow: '2 / 5' }}><MotionWorkspace /></div> : <>
       <div className="bg-panel border-b border-line min-w-0 overflow-x-auto overflow-y-hidden no-scrollbar">
         {home ? <div className="h-full flex items-center px-3 text-muted">Create or open a document to start editing.</div> : <ErrorBoundary label="options bar"><OptionsBar /></ErrorBoundary>}
       </div>
@@ -87,6 +97,7 @@ export function App() {
       <footer className="bg-panel border-t border-line min-w-0 overflow-hidden"><StatusBar /></footer>
       </>}
       <DialogHost />
+      <ShortcutsDialog />
       <Toasts />
       <TooltipHost />
     </div>

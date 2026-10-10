@@ -1,3 +1,4 @@
+import { usePod } from './podcast/store';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
@@ -27,6 +28,8 @@ window.addEventListener('unhandledrejection', (e) => {
   engine: () => getEngine(),
   layers: () => { const s = getDocState(); return s ? allLayers(s.layers).map((l) => ({ id: l.id, name: l.name, type: l.type, opacity: l.opacity, blendMode: l.blendMode, visible: l.visible })) : []; },
   motion: () => useMotion.getState(),
+  podcast: () => usePod.getState(),
+  podcastSet: (p: Record<string, unknown>) => usePod.setState(p),
   history: () => { const s = useDocuments.getState(); const d = s.activeId ? s.docs[s.activeId] : null; return d ? { labels: d.history.map((h) => h.label), index: d.historyIndex } : null; },
 };
 
