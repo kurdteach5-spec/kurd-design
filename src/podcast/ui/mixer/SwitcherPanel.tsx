@@ -19,7 +19,7 @@ const TONES: Record<Tone, string> = {
   green: 'bg-[#16a34a] border-[#5ee38d] text-white shadow-[0_0_14px_rgba(40,210,100,.55)]',
   amber: 'bg-[#f0b400] border-[#ffd866] text-black shadow-[0_0_12px_rgba(255,190,0,.5)]',
   white: 'bg-[#e8eaed] border-white text-black',
-  off: 'bg-[#2b2e33] border-[#43474e] text-[#d6d9de] hover:bg-[#34383e]',
+  off: 'bg-[#1f1f30] border-[#33334a] text-[#d6d9de] hover:bg-[#28283c]',
 };
 
 function Btn({ tone = 'off', onClick, children, label, w = 58, h = 40, disabled, title }: { tone?: Tone; onClick: () => void; children: ReactNode; label: string; w?: number; h?: number; disabled?: boolean; title?: string }) {
@@ -58,7 +58,7 @@ function TBar() {
   const shown = flip ? 1 - p : p;
   return (
     <div className="flex flex-col items-center gap-1">
-      <div ref={ref} className="relative w-[34px] h-[92px] rounded-[4px] bg-[#16181b] border border-[#3a3e45] cursor-ns-resize touch-none" onPointerDown={onDown}
+      <div ref={ref} className="relative w-[34px] h-[92px] rounded-[4px] bg-[#16181b] border border-[#2c2c42] cursor-ns-resize touch-none" onPointerDown={onDown}
         onDoubleClick={() => { tbarCancel(); setP(0); }} role="slider" aria-label="T-bar" aria-valuenow={Math.round(p * 100)} data-tip="T-bar: drag to make the transition by hand">
         <div className="absolute left-1/2 -translate-x-1/2 top-1 bottom-1 w-[3px] bg-[#2a2d32] rounded" />
         <div className="absolute left-[2px] right-[2px] h-[14px] rounded-[3px] bg-gradient-to-b from-[#d9dce1] to-[#8e939b] shadow" style={{ top: `calc(${shown * 100}% * (92 - 16) / 92)` }} />
@@ -99,7 +99,7 @@ export function SwitcherPanel() {
   );
   const styles: { id: TransStyle; label: string }[] = [{ id: 'mix', label: 'MIX' }, { id: 'dip', label: 'DIP' }, { id: 'wipe', label: 'WIPE' }, { id: 'dve', label: 'DVE' }];
   return (
-    <div className="bg-[#1d1f23] border-t border-[#33363c] px-3 py-2.5 flex flex-wrap gap-x-5 gap-y-3 items-start">
+    <div className="bg-[#1d1f23] border-t border-[#26263a] px-3 py-2.5 flex flex-wrap gap-x-5 gap-y-3 items-start">
       {/* left: SuperSource, transition style */}
       <Group title="SuperSource">
         <div className="grid grid-cols-3 gap-[5px]">
@@ -139,7 +139,7 @@ export function SwitcherPanel() {
         <Group key={i} title={`Logo / DSK ${i + 1}`}>
           <div className="grid grid-cols-2 gap-[5px]">
             <Btn tone={st.dsk[i].tie ? 'amber' : 'off'} label={`DSK ${i + 1} TIE`} onClick={() => setDsk(i, { tie: !st.dsk[i].tie })} w={50} h={34}>TIE</Btn>
-            <label className="flex flex-col items-center justify-center text-[9px] text-[#8b9099] w-[50px] h-[34px] rounded-[4px] border border-[#43474e] bg-[#2b2e33]">RATE
+            <label className="flex flex-col items-center justify-center text-[9px] text-[#8b9099] w-[50px] h-[34px] rounded-[4px] border border-[#33334a] bg-[#1f1f30]">RATE
               <select className="bg-transparent text-[11px] text-[#d6d9de] w-[44px] text-center" value={String(st.dsk[i].rate)} aria-label={`DSK ${i + 1} rate`} onChange={(e) => setDsk(i, { rate: Number(e.target.value) })}>
                 {[0.25, 0.5, 1, 1.5, 2].map((d) => <option key={d} value={d}>{rate(d)}</option>)}
               </select>

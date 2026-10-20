@@ -6,12 +6,17 @@ export type Workspace = 'design' | 'motion' | 'podcast' | 'mixer';
 const KEY = 'kurd-design-workspace';
 const initial = (): Workspace => { try { const v = localStorage.getItem(KEY); return v === 'motion' || v === 'podcast' || v === 'mixer' ? v : 'design'; } catch { return 'design'; } };
 
-export const useWorkspace = create<{ mode: Workspace }>(() => ({ mode: initial() }));
-export const isMotion = () => useWorkspace.getState().mode === 'motion';
-export const isPodcast = () => useWorkspace.getState().mode === 'podcast';
-export const isMixer = () => useWorkspace.getState().mode === 'mixer';
-export const isDesign = () => useWorkspace.getState().mode === 'design';
+const LAUNCH_KEY = 'kurd-design-launcher';
+/** the start screen with the four sections is shown when the site opens (unless switched off) */
+export const launcherOnStart = (): boolean => { try { return localStorage.getItem(LAUNCH_KEY) !== 'off'; } catch { return true; } };
+export function setLauncherOnStart(on: boolean) { try { localStorage.setItem(LAUNCH_KEY, on ? 'on' : 'off'); } catch { /* storage blocked */ } }
+export const useWorkspace = create<{ mode: Workspace; launcher: boolean }>(() => ({ mode: initial(), launcher: launcherOnStart() }));
+export const openLauncher = () => useWorkspace.setState({ launcher: true });
+export const isMotion = () => !useWorkspace.getState().launcher && useWorkspace.getState().mode === 'motion';
+export const isPodcast = () => !useWorkspace.getState().launcher && useWorkspace.getState().mode === 'podcast';
+export const isMixer = () => !useWorkspace.getState().launcher && useWorkspace.getState().mode === 'mixer';
+export const isDesign = () => !useWorkspace.getState().launcher && useWorkspace.getState().mode === 'design';
 export function setWorkspace(mode: Workspace) {
-  useWorkspace.setState({ mode });
+  useWorkspace.setState({ mode, launcher: false });
   try { localStorage.setItem(KEY, mode); } catch { /* storage blocked */ }
 }

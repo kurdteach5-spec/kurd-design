@@ -1,7 +1,7 @@
 import { create } from './createStore';
 import { uid } from '../utils/id';
 
-export type PanelId = 'layers' | 'properties' | 'color' | 'swatches' | 'history' | 'adjustments' | 'brush' | 'character' | 'paragraph';
+export type PanelId = 'layers' | 'properties' | 'color' | 'swatches' | 'history' | 'adjustments' | 'brush' | 'character' | 'paragraph' | 'navigator' | 'histogram' | 'info' | 'channels';
 export interface PanelGroup { id: string; tabs: PanelId[]; active: PanelId; collapsed: boolean; height?: number }
 
 export type DialogDescriptor =
@@ -51,11 +51,16 @@ export interface UIState {
 }
 
 const DEFAULT_GROUPS: PanelGroup[] = [
-  { id: 'g-color', tabs: ['color', 'swatches'], active: 'color', collapsed: typeof window !== 'undefined' && window.innerHeight < 1000 },
+  { id: 'g-color', tabs: ['color', 'swatches', 'navigator', 'histogram', 'info'], active: 'color', collapsed: typeof window !== 'undefined' && window.innerHeight < 1000 },
   { id: 'g-props', tabs: ['properties', 'adjustments', 'brush', 'character', 'paragraph'], active: 'properties', collapsed: false },
-  { id: 'g-layers', tabs: ['layers', 'history'], active: 'layers', collapsed: false },
+  { id: 'g-layers', tabs: ['layers', 'channels', 'history'], active: 'layers', collapsed: false },
 ];
 
+/** panels added in later versions join their default group in a saved layout */
+function withNewPanels(groups: PanelGroup[]): PanelGroup[] {
+  const have = new Set(groups.flatMap((g) => g.tabs));
+  return groups.map((g) => { const d = DEFAULT_GROUPS.find((x) => x.id === g.id); const add = d ? d.tabs.filter((t) => !have.has(t)) : []; return add.length ? { ...g, tabs: [...g.tabs, ...add] } : g; });
+}
 const KEY = 'designpro.ui.v1';
 function load(): Partial<UIState> {
   try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch { return {}; }
@@ -63,7 +68,7 @@ function load(): Partial<UIState> {
 const saved = load();
 
 export const useUI = create<UIState>(() => ({
-  groups: Array.isArray(saved.groups) && saved.groups.length === DEFAULT_GROUPS.length ? saved.groups : DEFAULT_GROUPS,
+  groups: Array.isArray(saved.groups) && saved.groups.length === DEFAULT_GROUPS.length ? withNewPanels(saved.groups) : DEFAULT_GROUPS,
   hiddenPanels: saved.hiddenPanels ?? [],
   sidebarWidth: saved.sidebarWidth ?? 300,
   sidebarMode: typeof window !== 'undefined' && window.innerWidth < 1100 ? 'rail' : saved.sidebarMode ?? 'docked',
@@ -75,7 +80,7 @@ export const useUI = create<UIState>(() => ({
   snap: saved.snap ?? true,
   showSelectionEdges: true,
   gridSize: saved.gridSize ?? 50,
-  gridColor: saved.gridColor ?? '#4f8cff',
+  gridColor: saved.gridColor ?? '#7c5cff',
   dialog: null,
   toasts: [],
   busy: null,

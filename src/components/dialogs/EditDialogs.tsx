@@ -85,7 +85,7 @@ export function FilterDialog({ id }: { id: string }) {
         : p.type === 'select'
           ? <Row key={p.key} label={p.label}><Select value={String(params[p.key])} options={p.options!} onChange={(v) => setParams((x) => ({ ...x, [p.key]: v }))} /></Row>
           : <Checkbox key={p.key} label={p.label} checked={!!params[p.key]} onChange={(v) => setParams((x) => ({ ...x, [p.key]: v }))} />)}
-      <div className="h-1 rounded-full bg-[#1d2025] overflow-hidden" aria-hidden>{progress !== null && <div className="h-full bg-accent transition-[width]" style={{ width: `${Math.max(4, progress * 100)}%` }} />}</div>
+      <div className="h-1 rounded-full bg-[#12121e] overflow-hidden" aria-hidden>{progress !== null && <div className="h-full bg-accent transition-[width]" style={{ width: `${Math.max(4, progress * 100)}%` }} />}</div>
       <div className="text-faint">{getDocState()?.selection ? 'Applies inside the selection.' : 'Applies to the whole layer.'}</div>
     </Dialog>
   );
@@ -183,7 +183,7 @@ export function LayerStyleDialog({ layerId, tab }: { layerId: string; tab?: stri
         <div className="flex flex-col gap-0.5" role="tablist">
           {tabs.map((t) => (
             <div key={t.k} role="tab" aria-selected={active === t.k} className={`flex items-center gap-2 px-2 h-8 rounded-[4px] cursor-default ${active === t.k ? 'bg-accent-soft text-ink-strong' : 'hover:bg-hover'}`} onClick={() => setActive(t.k)}>
-              <input type="checkbox" className="accent-[#4f8cff]" checked={fx[t.k].enabled} aria-label={`Enable ${t.label}`} onChange={(e) => setFx({ ...fx, [t.k]: { ...fx[t.k], enabled: e.target.checked } })} onClick={(e) => e.stopPropagation()} />
+              <input type="checkbox" className="accent-[#7c5cff]" checked={fx[t.k].enabled} aria-label={`Enable ${t.label}`} onChange={(e) => setFx({ ...fx, [t.k]: { ...fx[t.k], enabled: e.target.checked } })} onClick={(e) => e.stopPropagation()} />
               {t.label}
             </div>
           ))}
@@ -323,10 +323,10 @@ export function ShortcutsDialog() {
 
 export function AboutDialog() {
   return (
-    <Dialog title="About KURD DESIGN" onClose={closeDialog} footer={null} width={400}>
+    <Dialog title="About SARWAR DESIGN" onClose={closeDialog} footer={null} width={400}>
       <div className="flex items-center gap-3">
         <Logo size={40} />
-        <div><div className="text-ink-strong text-sm font-bold tracking-[0.06em]">KURD DESIGN</div><div className="text-muted">Version 1.0 · runs entirely in your browser</div></div>
+        <div><div className="text-ink-strong text-sm font-bold tracking-[0.06em]">SARWAR DESIGN</div><div className="text-muted">Version 1.0 · runs entirely in your browser</div></div>
       </div>
       <p className="text-muted leading-relaxed">Layered photo editing and graphic design: non-destructive adjustment layers, masks, vector shapes and editable text, PSD import/export, and local projects with autosave. Your files never leave this device.</p>
     </Dialog>
@@ -337,7 +337,7 @@ export function Logo({ size = 22 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden>
       <rect width="32" height="32" rx="7" fill="#2c3138" />
-      <path d="M10 7v18M10 16l9-9M13.5 13l6.5 12" fill="none" stroke="#4f8cff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M21 9.6c-1.2-1.7-3-2.6-5.2-2.6-3 0-5.3 1.8-5.3 4.4 0 5.7 11 3.1 11 9 0 2.8-2.4 4.6-5.7 4.6-2.4 0-4.5-1-5.8-2.8" fill="none" stroke="#7c5cff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
       <circle cx="24" cy="9" r="3" fill="#ffb547" />
     </svg>
   );
@@ -352,12 +352,12 @@ export function RecoverDialog() {
   return (
     <Dialog title="Recover previous document?" onClose={closeDialog} width={460}
       footer={<><button className="btn btn-danger" onClick={() => { closeDialog(); void discardRecovery(); toast('Unsaved work discarded', 'info'); }}>Discard</button><div className="flex-1" /><button className="btn" onClick={closeDialog}>Decide later</button><button className="btn btn-primary" onClick={() => { closeDialog(); void recoverAll(); }}>Recover</button></>}>
-      <div className="text-muted">KURD DESIGN closed before these documents were saved:</div>
+      <div className="text-muted">SARWAR DESIGN closed before these documents were saved:</div>
       <div className="flex flex-col gap-2">
         {list?.map((r) => {
           const u = r.thumb ? URL.createObjectURL(r.thumb) : null; if (u) urls.current.push(u);
           return (
-            <div key={r.docId} className="flex items-center gap-3 p-2 rounded-[6px] bg-[#1d2025] border border-line-soft">
+            <div key={r.docId} className="flex items-center gap-3 p-2 rounded-[6px] bg-[#12121e] border border-line-soft">
               <div className="w-14 h-14 flex items-center justify-center checker rounded-[3px] overflow-hidden shrink-0">{u && <img src={u} alt="" className="max-w-full max-h-full" />}</div>
               <div className="min-w-0"><div className="text-ink-strong truncate">{r.name}</div><div className="text-faint num">{`${r.width} × ${r.height} · autosaved ${timeAgo(r.savedAt)}`}</div></div>
             </div>

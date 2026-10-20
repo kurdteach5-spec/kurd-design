@@ -1,7 +1,8 @@
 // Motion compositor: renders a composition at a time into a canvas.
 // Order per layer: content → masks → effects → transform (parenting, 2D/3D camera) → motion blur → blend.
-import type { BlendMode, CameraLayer, Composition, Mask, MLayer, MotionProject, Vec3 } from '../types';
+import type { BlendMode, CameraLayer, Composition, Mask, MatteMode, MLayer, MotionProject, Vec3 } from '../types';
 import { valueAt } from '../anim';
+import { exprComp, setExprComp } from '../expr';
 import { applyEffects, effectsPad, glfx, type EvaluatedEffect } from './glfx';
 import { effectDef } from './effectDefs';
 import { drawShape, drawText, evalShape, evalText, layoutText, pathToPath2D, shapeBounds } from './draw';
@@ -26,14 +27,25 @@ const gco = (b: BlendMode): GlobalCompositeOperation => GCO[b] ?? (b as GlobalCo
 
 export const isVisual = (l: MLayer) => l.type !== 'audio' && l.type !== 'null' && l.type !== 'camera';
 export const activeAt = (l: MLayer, t: number) => t >= l.inPoint - 1e-9 && t < l.outPoint - 1e-9;
-export const sourceTime = (l: MLayer, t: number) => (t - l.start) * l.speed;
+export const sourceTime = (l: MLayer, t: number) => (l.timeRemap ? valueAt(l.timeRemap, t) : (t - l.start) * l.speed);
 
 // ---------- transforms ----------
 export function localMatrix(l: MLayer, t: number): M4 {
   const tr = l.transform;
   const a = valueAt(tr.anchor, t), p = valueAt(tr.position, t), s = valueAt(tr.scale, t);
-  const rz = (valueAt(tr.rotation, t) * Math.PI) / 180;
-  if (!l.threeD) return mul(mul(mul(T(p[0], p[1], 0), RZ(rz)), S(s[0] / 100, s[1] / 100, 1)), T(-a[0], -a[1], 0));
+  let rzDeg = valueAt(tr.rotation, t);
+  if (l.autoOrient && tr.position.k.length > 1) {
+    // Auto-Orient: face the direction of travel
+    const d = 1 / 120; const p0 = valueAt(tr.position, t - d), p1 = valueAt(tr.position, t + d);
+    if (Math.hypot(p1[0] - p0[0], p1[1] - p0[1]) > 1e-6) rzDeg += (Math.atan2(p1[1] - p0[1], p1[0] - p0[0]) * 180) / Math.PI;
+  }
+  const rz = (rzDeg * Math.PI) / 180;
+  const sk = tr.skew ? valueAt(tr.skew, t) : 0;
+  if (!l.threeD) {
+    let m = mul(T(p[0], p[1], 0), RZ(rz));
+    if (sk) { const ax = ((tr.skewAxis ? valueAt(tr.skewAxis, t) : 0) * Math.PI) / 180; const K = I4(); K[4] = -Math.tan((sk * Math.PI) / 180); m = mul(mul(mul(m, RZ(ax)), K), RZ(-ax)); }
+    return mul(mul(m, S(s[0] / 100, s[1] / 100, 1)), T(-a[0], -a[1], 0));
+  }
   const rx = (valueAt(tr.rotationX, t) * Math.PI) / 180, ry = (valueAt(tr.rotationY, t) * Math.PI) / 180;
   return mul(mul(mul(mul(mul(T(p[0], p[1], p[2]), RZ(rz)), RY(ry)), RX(rx)), S(s[0] / 100, s[1] / 100, s[2] / 100)), T(-a[0], -a[1], -a[2]));
 }
@@ -228,6 +240,8 @@ export function renderComp(project: MotionProject, comp: Composition, t: number,
   const W = Math.max(1, Math.round(comp.width * q)), H = Math.max(1, Math.round(comp.height * q));
   const out = target ?? createCanvas(W, H);
   if (out.width !== W || out.height !== H) { out.width = W; out.height = H; }
+  const prevExpr = { ...exprComp };
+  setExprComp(comp);
   const x = ctx2d(out);
   x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over';
   x.clearRect(0, 0, W, H);
@@ -241,10 +255,13 @@ export function renderComp(project: MotionProject, comp: Composition, t: number,
     if (anySolo && !l.solo) continue;
     try {
       if (l.type === 'adjustment') { renderAdjustment(project, comp, l, t, x, W, H, q, cam); continue; }
+      const matte = l.matte ? comp.layers.find((m) => m.id === l.matte!.id && m.id !== l.id) : null;
+      if (matte && l.matte) { drawMatted(project, comp, l, matte, l.matte.mode, t, x, W, H, base, cam, opts); continue; }
       drawLayer(project, comp, l, t, x, base, cam, opts);
     } catch (e) { console.warn('Layer render failed', l.name, e); }
   }
   x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over';
+  Object.assign(exprComp, prevExpr);
   return out;
 }
 
@@ -315,6 +332,29 @@ function drawLayer(project: MotionProject, comp: Composition, l: MLayer, t: numb
     x.drawImage(target.canvas, 0, 0); x.restore();
   }
   target.globalCompositeOperation = 'source-over';
+}
+
+/** Track matte: the layer shows only where the matte layer is opaque (alpha) or bright (luma), or the inverse. */
+const matteBufs: HTMLCanvasElement[] = [];
+function matteBuf(i: number, w: number, h: number): CanvasRenderingContext2D {
+  matteBufs[i] ??= createCanvas(w, h);
+  const c = matteBufs[i]; if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+  const x = ctx2d(c); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over'; x.clearRect(0, 0, w, h);
+  return x;
+}
+function drawMatted(project: MotionProject, comp: Composition, l: MLayer, m: MLayer, mode: MatteMode, t: number, x: CanvasRenderingContext2D, W: number, H: number, base: M4, cam: CameraState, opts: RenderOptions) {
+  const lc = matteBuf(0, W, H);
+  drawLayer(project, comp, { ...l, blend: 'normal' } as MLayer, t, lc, base, cam, opts);
+  const mc = matteBuf(1, W, H);
+  if (activeAt(m, t) && isVisual(m) && m.type !== 'adjustment') drawLayer(project, comp, { ...m, blend: 'normal', matte: null } as MLayer, t, mc, base, cam, opts);
+  if (mode === 'luma' || mode === 'lumaInv') {
+    const img = mc.getImageData(0, 0, W, H); const d = img.data;
+    for (let i = 0; i < d.length; i += 4) { d[i + 3] = Math.round(((0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]) / 255) * d[i + 3]); }
+    mc.putImageData(img, 0, 0);
+  }
+  lc.globalCompositeOperation = mode === 'alpha' || mode === 'luma' ? 'destination-in' : 'destination-out';
+  lc.drawImage(mc.canvas, 0, 0); lc.globalCompositeOperation = 'source-over';
+  x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = gco(l.blend); x.drawImage(lc.canvas, 0, 0); x.restore();
 }
 
 let accum: HTMLCanvasElement | null = null;

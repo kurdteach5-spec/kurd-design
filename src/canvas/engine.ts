@@ -456,8 +456,8 @@ export class Engine {
       const x = ctx2d(c); const dpr = this.dpr;
       const W = c.width / dpr, H = c.height / dpr;
       x.setTransform(dpr, 0, 0, dpr, 0, 0);
-      x.fillStyle = '#1b1d21'; x.fillRect(0, 0, W, H);
-      x.strokeStyle = '#3a3e45'; x.beginPath();
+      x.fillStyle = '#10101a'; x.fillRect(0, 0, W, H);
+      x.strokeStyle = '#2c2c42'; x.beginPath();
       if (horiz) { x.moveTo(0, H - 0.5); x.lineTo(W, H - 0.5); } else { x.moveTo(W - 0.5, 0); x.lineTo(W - 0.5, H); }
       x.stroke();
       if (!st) continue;
@@ -470,7 +470,7 @@ export class Engine {
       const steps = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000, 10000];
       const step = steps.find((s) => s * z >= 60) ?? 10000;
       const minor = step / (step % 5 === 0 ? 5 : 2);
-      x.font = '9px Inter, system-ui, sans-serif'; x.fillStyle = '#8a9099'; x.strokeStyle = '#4a4f57';
+      x.font = '9px Inter, system-ui, sans-serif'; x.fillStyle = '#8a9099'; x.strokeStyle = '#383852';
       const start = Math.floor(-origin / z / minor) * minor;
       const end = (len - origin) / z;
       x.beginPath();
@@ -489,7 +489,7 @@ export class Engine {
       x.stroke();
       // cursor marker
       if (this.hoverScreen) {
-        x.strokeStyle = '#4f8cff'; x.beginPath();
+        x.strokeStyle = '#7c5cff'; x.beginPath();
         if (horiz) { x.moveTo(this.hoverScreen.x + 0.5, 0); x.lineTo(this.hoverScreen.x + 0.5, H); }
         else { x.moveTo(0, this.hoverScreen.y + 0.5); x.lineTo(W, this.hoverScreen.y + 0.5); }
         x.stroke();

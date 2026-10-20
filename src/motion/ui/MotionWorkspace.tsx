@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
 import { MotionToolbar } from './MotionToolbar';
 import { ProjectPanel } from './ProjectPanel';
-import { EffectsPresetsPanel } from './EffectsPresetsPanel';
 import { Viewer } from './Viewer';
 import { Timeline } from './Timeline';
-import { MotionProperties } from './MotionProperties';
+import { EffectControls } from './MotionProperties';
+import { RightStack, WorkspaceSwitcher } from './AePanels';
+import { useMotion, activeComp } from '../store';
 import { RenderPanel } from './RenderPanel';
 import { MotionDialogs } from './MotionDialogs';
 import { useMotionUI } from '../uiState';
@@ -16,7 +17,7 @@ import { LuFolderOpen, LuSlidersHorizontal, LuX } from 'react-icons/lu';
 
 function Tabs<T extends string>({ value, tabs, onChange, onClose }: { value: T; tabs: { id: T; label: string }[]; onChange: (v: T) => void; onClose?: () => void }) {
   return (
-    <div className="flex items-center h-[30px] bg-[#202328] border-b border-line-soft shrink-0 ps-1" role="tablist">
+    <div className="flex items-center h-[30px] bg-[#151522] border-b border-line-soft shrink-0 ps-1" role="tablist">
       {tabs.map((t) => <button key={t.id} type="button" role="tab" aria-selected={value === t.id} className="panel-tab shrink-0 whitespace-nowrap" onClick={() => onChange(t.id)}>{t.label}</button>)}
       <div className="flex-1" />
       {onClose && <button type="button" className="icon-btn me-0.5" aria-label="Close panel" onClick={onClose}><LuX size={14} /></button>}
@@ -35,13 +36,15 @@ export function MotionWorkspace() {
   const ui = useMotionUI();
   const { w, h } = useWindowSize();
   useEffect(() => { installMotionKeyboard(); startMotionAutosave(); }, []);
-  const dockLeft = w >= 1280;
-  const dockRight = w >= 860;
+  const minimal = ui.aeWorkspace === 'minimal';
+  const dockLeft = w >= 1280 && !minimal;
+  const dockRight = w >= 860 && !minimal;
+  const comp = useMotion((s) => activeComp(s));
   const leftW = w >= 1600 ? 270 : 240;
   const rightW = w >= 1600 ? 320 : w >= 1100 ? 290 : 260;
   const drawerW = Math.min(340, w - 48);
   // the timeline keeps at least ~200 px for the viewer above it
-  const maxTl = Math.max(120, h - 32 - 36 - 200);
+  const maxTl = Math.max(150, h - 32 - 36 - 200);
   const tlH = Math.max(120, Math.min(ui.timelineHeight, maxTl));
   const drawer = ui.drawer === 'left' && dockLeft ? null : ui.drawer === 'right' && dockRight ? null : ui.drawer;
   const setDrawer = (d: 'left' | 'right' | null) => useMotionUI.setState({ drawer: d });
@@ -56,14 +59,14 @@ export function MotionWorkspace() {
 
   const left = (onClose?: () => void) => (
     <>
-      <Tabs value={ui.leftTab} tabs={[{ id: 'project', label: 'Project' }, { id: 'effects', label: 'Effects & Presets' }]} onChange={(v) => useMotionUI.setState({ leftTab: v })} onClose={onClose} />
-      <div className="flex-1 min-h-0">{ui.leftTab === 'project' ? <ProjectPanel /> : <EffectsPresetsPanel />}</div>
+      <Tabs value={ui.leftTab} tabs={[{ id: 'project', label: 'Project' }, { id: 'effectControls', label: 'Effect Controls' }]} onChange={(v) => useMotionUI.setState({ leftTab: v })} onClose={onClose} />
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">{ui.leftTab === 'project' ? <ProjectPanel /> : <ErrorBoundary label="effect controls"><EffectControls /></ErrorBoundary>}</div>
     </>
   );
   const right = (onClose?: () => void) => (
     <>
-      <Tabs value={ui.rightTab} tabs={[{ id: 'properties', label: 'Properties' }, { id: 'render', label: 'Render' }]} onChange={(v) => useMotionUI.setState({ rightTab: v })} onClose={onClose} />
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden"><ErrorBoundary label="properties">{ui.rightTab === 'properties' ? <MotionProperties /> : <RenderPanel />}</ErrorBoundary></div>
+      {onClose && <div className="h-[28px] shrink-0 flex justify-end items-center border-b border-line-soft"><button type="button" className="icon-btn me-0.5" aria-label="Close panel" onClick={onClose}><LuX size={14} /></button></div>}
+      <div className="flex-1 min-h-0"><RightStack /></div>
     </>
   );
   const PanelButton = ({ side, label, icon }: { side: 'left' | 'right'; label: string; icon: React.ReactNode }) => (
@@ -76,6 +79,7 @@ export function MotionWorkspace() {
     <div className="h-full flex flex-col min-h-0 min-w-0">
       <div className="h-9 shrink-0 bg-panel border-b border-line flex items-center min-w-0">
         <div className="flex-1 min-w-0 h-full"><MotionToolbar /></div>
+        <div className="px-2 h-full flex items-center border-s border-line"><WorkspaceSwitcher /></div>
         {(!dockLeft || !dockRight) && (
           <div className="flex items-center gap-1 pe-2 ps-1 border-s border-line h-full shrink-0">
             {!dockLeft && <PanelButton side="left" label="Project" icon={<LuFolderOpen size={15} />} />}
@@ -100,7 +104,15 @@ export function MotionWorkspace() {
         )}
       </div>
       <div className="h-1.5 shrink-0 cursor-row-resize bg-line hover:bg-accent/60 touch-none" role="separator" aria-orientation="horizontal" aria-label="Resize timeline" onPointerDown={startResize} />
-      <div className="shrink-0 min-h-0" style={{ height: tlH }}><ErrorBoundary label="timeline"><Timeline /></ErrorBoundary></div>
+      <div className="shrink-0 min-h-0 flex flex-col" style={{ height: tlH }}>
+        <div className="h-[28px] shrink-0 flex items-end gap-px px-1 bg-panel border-b border-line" role="tablist" aria-label="Timeline panels">
+          <button type="button" role="tab" aria-selected={ui.bottomTab === 'timeline'} className={`h-[24px] px-3 rounded-t-[6px] text-xs whitespace-nowrap ${ui.bottomTab === 'timeline' ? 'bg-[#141421] text-ink-strong' : 'text-muted hover:text-ink'}`} onClick={() => useMotionUI.setState({ bottomTab: 'timeline' })}>
+            <span translate="no">{comp ? comp.name : ''}</span>{comp ? ' · ' : ''}Timeline
+          </button>
+          <button type="button" role="tab" aria-selected={ui.bottomTab === 'render'} className={`h-[24px] px-3 rounded-t-[6px] text-xs whitespace-nowrap ${ui.bottomTab === 'render' ? 'bg-[#141421] text-ink-strong' : 'text-muted hover:text-ink'}`} onClick={() => useMotionUI.setState({ bottomTab: 'render' })}>Render Queue</button>
+        </div>
+        <div className="flex-1 min-h-0">{ui.bottomTab === 'timeline' ? <ErrorBoundary label="timeline"><Timeline /></ErrorBoundary> : <div className="h-full overflow-y-auto bg-[#141421]"><div className="max-w-[720px]"><ErrorBoundary label="render"><RenderPanel /></ErrorBoundary></div></div>}</div>
+      </div>
       <MotionDialogs />
     </div>
   );

@@ -160,7 +160,7 @@ export const PRESETS: Preset[] = [
   { id: 'lower-third', name: 'Lower Third', category: 'Broadcast Graphics', description: 'Name + title bar that slides in', create: (c) => {
     const W = c.comp.width, H = c.comp.height; const y = H * 0.8; const x0 = W * 0.08;
     const barW = W * 0.36, barH = H * 0.1;
-    let bar: MLayer = newShape(c.comp, 'rect', c.t, { size: [barW, barH], position: [x0 + barW / 2, y, 0], fill: '#4f8cff' });
+    let bar: MLayer = newShape(c.comp, 'rect', c.t, { size: [barW, barH], position: [x0 + barW / 2, y, 0], fill: '#7c5cff' });
     bar = { ...bar, name: 'Lower Third Bar' };
     bar = withProp<Vec3>(bar, 'transform.scale', (p) => keys(p, [[c.t, [0, 100, 100], 'easeOut'], [c.t + 0.5, [100, 100, 100], 'easeIn']], c.fps));
     bar = withProp<Vec3>(bar, 'transform.anchor', (p) => ({ ...p, v: [-barW / 2, 0, 0] }));
@@ -186,7 +186,7 @@ export const PRESETS: Preset[] = [
   { id: 'news-ticker', name: 'News Ticker', category: 'Broadcast Graphics', description: 'Scrolling text on a bar', create: (c) => {
     const W = c.comp.width, H = c.comp.height, h = H * 0.07, y = H - h / 2;
     const bar: MLayer = { ...newShape(c.comp, 'rect', c.t, { size: [W, h], position: [W / 2, y, 0], fill: '#c8102e' }), name: 'Ticker Bar' };
-    const txt = newText(c.comp, 'BREAKING  •  Your headline scrolls here  •  KURD DESIGN MOTION', c.t, { size: Math.round(h * 0.5), position: [W, y + h * 0.18, 0] });
+    const txt = newText(c.comp, 'BREAKING  •  Your headline scrolls here  •  SARWAR DESIGN MOTION', c.t, { size: Math.round(h * 0.5), position: [W, y + h * 0.18, 0] });
     let t: MLayer = { ...txt, text: { ...txt.text, align: 'left' }, name: 'Ticker Text' } as MLayer;
     const dur = Math.max(6, c.comp.duration - c.t);
     t = withProp<Vec3>(t, 'transform.position', (p) => keys(p, [[c.t, [W, y + h * 0.18, 0], 'linear'], [c.t + dur, [-W * 1.6, y + h * 0.18, 0], 'linear']], c.fps));

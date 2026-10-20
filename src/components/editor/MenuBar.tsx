@@ -34,7 +34,7 @@ export const MENUS: MenuDef[] = [
   { label: 'Filter', items: ['filter.last', 'filter.convertSmart', '-', ...filterGroups, '-', 'filter.dropShadow', 'filter.outerGlow'] },
   { label: 'View', items: ['view.zoomIn', 'view.zoomOut', 'view.fit', 'view.fill', 'view.100', 'view.200', 'view.center', '-', 'view.rotLeft', 'view.rotRight', 'view.rotReset', '-',
     'view.rulers', 'view.grid', 'view.guides', 'view.pixelGrid', 'view.extras', 'view.snap', '-', 'view.newGuide', 'view.guideCenter', 'view.clearGuides', 'view.gridSettings'] },
-  { label: 'Window', items: ['window.layers', 'window.properties', 'window.color', 'window.swatches', 'window.history', 'window.adjustments', 'window.brush', 'window.character', 'window.paragraph', '-', 'window.docked', 'window.reset'] },
+  { label: 'Window', items: ['window.layers', 'window.properties', 'window.color', 'window.swatches', 'window.history', 'window.adjustments', 'window.brush', 'window.character', 'window.paragraph', 'window.navigator', 'window.histogram', 'window.info', 'window.channels', '-', 'window.docked', 'window.reset'] },
   { label: 'Help', items: ['help.shortcuts', '-', 'help.about'] },
 ];
 

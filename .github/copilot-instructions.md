@@ -1,4 +1,4 @@
-# KURD DESIGN — notes for GitHub Copilot
+# SARWAR DESIGN — notes for GitHub Copilot
 
 Browser-based layered image editor. React 19 + TypeScript + Vite + Tailwind CSS 4. No backend: everything runs in the browser; projects are stored in IndexedDB.
 

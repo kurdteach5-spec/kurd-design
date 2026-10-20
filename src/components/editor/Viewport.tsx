@@ -91,7 +91,7 @@ export function Viewport() {
       onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; if (!useUI.getState().dropActive) useUI.setState({ dropActive: true }); }}
       onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) useUI.setState({ dropActive: false }); }}
       onDrop={onDrop}>
-      <div className="bg-[#1b1d21] border-r border-b border-line" />
+      <div className="bg-[#10101a] border-r border-b border-line" />
       <canvas ref={top} className="w-full h-full cursor-s-resize" style={{ visibility: showRulers ? 'visible' : 'hidden' }} onPointerDown={startGuide('h')} aria-hidden />
       <canvas ref={left} className="w-full h-full cursor-e-resize" style={{ visibility: showRulers ? 'visible' : 'hidden' }} onPointerDown={startGuide('v')} aria-hidden />
       <div ref={host} className="relative overflow-hidden outline-none focus-visible:outline-none" style={{ cursor, outline: 'none' }} tabIndex={-1} aria-label="Canvas">

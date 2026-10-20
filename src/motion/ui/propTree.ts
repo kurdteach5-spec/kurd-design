@@ -17,6 +17,7 @@ export function transformProps(l: MLayer): PropMeta[] {
   ];
   if (l.threeD) out.push(P('transform.rotationX', 'X Rotation', 'angle'), P('transform.rotationY', 'Y Rotation', 'angle'), P('transform.rotation', 'Z Rotation', 'angle'));
   else out.push(P('transform.rotation', 'Rotation', 'angle'));
+  if (l.transform.skew) out.push(P('transform.skew', 'Skew', 'angle'), P('transform.skewAxis', 'Skew Axis', 'angle'));
   if (l.type !== 'camera') out.push(P('transform.opacity', 'Opacity', 'percent', { min: 0, max: 100 }));
   if (l.type === 'camera' && l.mode === '2d') return [P('transform.position', 'Position', 'vec2'), P('transform.rotation', 'Rotation', 'angle')];
   return out;
@@ -41,6 +42,14 @@ export function layerGroups(l: MLayer): PropGroup[] {
     if (k === 'path') props.push(P('shape.path', 'Path', 'path'));
     props.push(P('shape.fill', 'Fill Color', 'color'), P('shape.stroke', 'Stroke Color', 'color'), P('shape.strokeWidth', 'Stroke Width', 'number', { min: 0, max: 500, unit: 'px', step: 0.5 }),
       P('shape.trimStart', 'Trim Start', 'percent', { min: 0, max: 100 }), P('shape.trimEnd', 'Trim End', 'percent', { min: 0, max: 100 }));
+    if (l.shape.trimOffset) props.push(P('shape.trimOffset', 'Trim Offset', 'angle'));
+    if (l.shape.roundCorners) props.push(P('shape.roundCorners', 'Round Corners', 'number', { min: 0, max: 5000, unit: 'px' }));
+    if (l.shape.fillGradient) props.push(P('shape.fillGradient.start', 'Gradient Start', 'vec2'), P('shape.fillGradient.end', 'Gradient End', 'vec2'));
+    if (l.shape.strokeGradient) props.push(P('shape.strokeGradient.start', 'Stroke Gradient Start', 'vec2'), P('shape.strokeGradient.end', 'Stroke Gradient End', 'vec2'));
+    if (l.shape.repeater) props.push(
+      P('shape.repeater.copies', 'Repeater Copies', 'number', { min: 0, max: 500 }), P('shape.repeater.offset', 'Repeater Offset', 'number', { step: 0.1 }),
+      P('shape.repeater.position', 'Repeater Position', 'vec2'), P('shape.repeater.scale', 'Repeater Scale', 'vec2', { unit: '%' }), P('shape.repeater.rotation', 'Repeater Rotation', 'angle'),
+      P('shape.repeater.anchor', 'Repeater Anchor', 'vec2'), P('shape.repeater.startOpacity', 'Start Opacity', 'percent', { min: 0, max: 100 }), P('shape.repeater.endOpacity', 'End Opacity', 'percent', { min: 0, max: 100 }));
     g.push({ id: 'contents', label: 'Contents', props });
   }
   if (l.type === 'solid') g.push({ id: 'solid', label: 'Solid', props: [P('color', 'Color', 'color')] });
@@ -52,6 +61,7 @@ export function layerGroups(l: MLayer): PropGroup[] {
     const d = effectDef(e.type);
     return { id: e.id, label: d?.name ?? e.type, kind: 'effect', props: (d?.params ?? []).map((p) => P(`fx:${e.id}.${p.key}`, p.label, fxKind(p), { min: p.min, max: p.max, step: p.step, unit: p.unit, options: p.options })) };
   }) });
+  if (l.timeRemap) g.push({ id: 'time', label: 'Time Remap', props: [P('timeRemap', 'Time Remap', 'number', { min: 0, step: 0.01, unit: 's' })] });
   g.push({ id: 'transform', label: 'Transform', props: transformProps(l) });
   if (l.type === 'video' || l.type === 'audio') g.push({ id: 'audio', label: 'Audio', props: [P('volume', 'Audio Levels', 'number', { min: -48, max: 12, unit: 'dB', step: 0.1 })] });
   if (l.type === 'camera') g.push({ id: 'camera', label: 'Camera Options', props: [P('zoom', l.mode === '3d' ? 'Focal Length' : 'Zoom', 'number', { min: 1, max: l.mode === '3d' ? 400 : 2000, unit: l.mode === '3d' ? 'mm' : '%' })] });

@@ -2,7 +2,7 @@
   "name": "kurd-design",
   "private": true,
   "version": "1.0.0",
-  "description": "KURD DESIGN \u2014 a professional browser-based image editor",
+  "description": "SARWAR DESIGN \u2014 a professional browser-based image editor",
   "type": "module",
   "scripts": {
     "dev": "vite",

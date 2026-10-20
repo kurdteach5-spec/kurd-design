@@ -57,7 +57,7 @@ function InputsBox() {
         <button type="button" className="btn h-[28px] text-xs inline-flex items-center justify-center gap-1.5 px-2" onClick={async () => { const fs = await pick(VIDEO, true); if (fs.length) void addBroll(fs); }}><LuImages size={13} />B-roll</button>
       </div>
       {cams.length >= 2 && (busy ? (
-        <div className="flex items-center gap-2 text-2xs text-muted" role="status"><div className="flex-1 h-1.5 rounded-full bg-[#1a1d21] overflow-hidden"><div className="h-full bg-accent" style={{ width: `${Math.round(progress * 100)}%` }} /></div><button type="button" className="btn h-[22px] text-2xs" onClick={cancelAnalysis}>Cancel</button></div>
+        <div className="flex items-center gap-2 text-2xs text-muted" role="status"><div className="flex-1 h-1.5 rounded-full bg-[#10101a] overflow-hidden"><div className="h-full bg-accent" style={{ width: `${Math.round(progress * 100)}%` }} /></div><button type="button" className="btn h-[22px] text-2xs" onClick={cancelAnalysis}>Cancel</button></div>
       ) : (
         <div className="flex flex-col gap-1.5">
           <button type="button" className="btn h-[26px] text-xs inline-flex items-center justify-center gap-1.5" onClick={() => void syncOnly()} data-tip="Lines the cameras up in time using their sound (same as the Podcast workspace)"><LuRefreshCw size={13} />Sync cameras by sound</button>
@@ -136,7 +136,7 @@ function SSAnimEditor({ id }: { id: string }) {
 const PRESET_NAMES: Record<SplitLayout, string> = { side2: 'Side by side', cropped2: 'Two boxes', stack2: 'Top / bottom', side3: 'Three', grid4: 'Grid 2×2', pip: 'Picture in picture', pip2: 'Two small boxes' };
 function PresetIcon({ layout }: { layout: SplitLayout }) {
   const r = presetRects(layout, 16 / 9, 0.03);
-  return <svg width="34" height="19" viewBox="0 0 34 19" aria-hidden><rect x="0.5" y="0.5" width="33" height="18" rx="1.5" fill="#111" stroke="#555" />{r.map((b, i) => <rect key={i} x={1 + b.x * 32} y={1 + b.y * 17} width={b.w * 32} height={b.h * 17} fill={['#4f8cff', '#2fbf71', '#f0a030', '#c05bd8'][i]} opacity={0.85} />)}</svg>;
+  return <svg width="34" height="19" viewBox="0 0 34 19" aria-hidden><rect x="0.5" y="0.5" width="33" height="18" rx="1.5" fill="#111" stroke="#555" />{r.map((b, i) => <rect key={i} x={1 + b.x * 32} y={1 + b.y * 17} width={b.w * 32} height={b.h * 17} fill={['#7c5cff', '#2fbf71', '#f0a030', '#c05bd8'][i]} opacity={0.85} />)}</svg>;
 }
 
 export function SuperSourceEditor({ id, large = false }: { id: string; large?: boolean }) {
@@ -205,7 +205,7 @@ export function SuperSourceEditor({ id, large = false }: { id: string; large?: b
     const a = (src.width * (1 - box.crop.l - box.crop.r)) / (src.height * (1 - box.crop.t - box.crop.b));
     updateBox(id, bi, { h: Math.min(1, (box.w * out.width) / (out.height * a)) });
   };
-  const COLORS = ['#4f8cff', '#2fbf71', '#f0a030', '#c05bd8'];
+  const COLORS = ['#7c5cff', '#2fbf71', '#f0a030', '#c05bd8'];
   const canvasArea = (
     <div ref={area} className="relative w-full bg-black rounded-[4px] overflow-hidden select-none touch-none" style={{ aspectRatio: `${out.width} / ${out.height}` }} onPointerDown={() => setSel(-1)}>
       <canvas ref={ref} className="absolute inset-0 w-full h-full" aria-label="SuperSource preview" />
@@ -233,7 +233,7 @@ export function SuperSourceEditor({ id, large = false }: { id: string; large?: b
           <div key={i} className={`flex flex-col gap-1 rounded-[5px] p-1 ${i === bi && sel >= 0 ? 'bg-[#262b33]' : ''}`} onClick={() => setSel(i)}>
             <div className="flex items-center gap-1.5">
               <span className="w-4 h-4 rounded-[3px] text-[10px] font-bold text-black flex items-center justify-center shrink-0" style={{ background: COLORS[i] }}>{i + 1}</span>
-              <input type="checkbox" className="accent-[#4f8cff]" checked={b.on} aria-label={`Box ${i + 1} on`} onChange={(e) => updateBox(id, i, { on: e.target.checked })} />
+              <input type="checkbox" className="accent-[#7c5cff]" checked={b.on} aria-label={`Box ${i + 1} on`} onChange={(e) => updateBox(id, i, { on: e.target.checked })} />
               <div className="flex-1 min-w-0"><SourceSelect value={b.cam} label={`Source of box ${i + 1}`} allowNone onChange={(v) => updateBox(id, i, { cam: v })} /></div>
               <button type="button" className="icon-btn !w-5 !h-5" aria-label="Bring to front" data-tip="Bring to front" disabled={i === boxes.length - 1} onClick={() => { bringBoxToFront(id, i); setSel(boxes.length - 1); }}><LuArrowUpToLine size={11} /></button>
               <button type="button" className="icon-btn !w-5 !h-5" aria-label="Remove box" disabled={boxes.length <= 1} onClick={() => removeBox(id, i)}><LuX size={11} /></button>

@@ -5,7 +5,7 @@ import { isMixer } from '../../state/workspace';
 import { LuKeyboard, LuX, LuRotateCcw } from 'react-icons/lu';
 
 function Key({ k }: { k: string }) {
-  return <kbd className="inline-flex items-center h-[20px] px-1.5 rounded-[4px] border border-[#4a515c] bg-[#2a2e34] text-[11px] font-semibold num" style={{ color: '#e8eaed' }} dir="ltr">{keyLabel(k)}</kbd>;
+  return <kbd className="inline-flex items-center h-[20px] px-1.5 rounded-[4px] border border-[#3a3a58] bg-[#1d1d2e] text-[11px] font-semibold num" style={{ color: '#e8eaed' }} dir="ltr">{keyLabel(k)}</kbd>;
 }
 
 export function ShortcutsDialog() {

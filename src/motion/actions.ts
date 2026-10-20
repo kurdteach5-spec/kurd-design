@@ -4,13 +4,14 @@ import {
   useMotion, mcommit, updateComp, updateLayer, getProp, setProp, mapLayerProps, activeComp, compTime, setTime, sanitizeUi, type KeyRef,
 } from './store';
 import {
-  applyEase, makeKey, removeKeys, setAt, shiftKeys, snapTime, toggleAnimated, toggleKeyAt, valueAt, mapKeys, type EasePreset,
+  applyEase, makeKey, rawValueAt, removeKeys, setAt, shiftKeys, snapTime, toggleAnimated, toggleKeyAt, valueAt, mapKeys, type EasePreset,
 } from './anim';
 import {
   newComposition, newSolid, newText, newShape, newNull, newAdjustment, newCamera, newMediaLayer, newPrecompLayer, newEffect, newMask, cloneLayer, rectPathAt, ellipsePath,
 } from './factory';
 import { importAsset, kindOf, forgetAsset } from './media/assets';
 import { worldMatrix } from './render/renderer';
+import * as R from './render/renderer';
 import { invert4, mul, apply4 } from './render/mat4';
 import { toast, toastError } from '../state/uiStore';
 import { uid } from '../utils/id';
@@ -71,6 +72,12 @@ export function renameProjectItem(id: string, name: string) {
 // ---------- import ----------
 export async function importFiles(files: File[], addToComp = true): Promise<string[]> {
   const ids: string[] = [];
+  // After Effects projects (.aep / .aepx) and Lottie JSON; media chosen with them is linked to their footage
+  if (files.some((f) => /\.(aep|aepx|json)$/i.test(f.name))) {
+    const { importAfterEffects } = await import('./import');
+    files = await importAfterEffects(files);
+    if (!files.length) return ids;
+  }
   for (const f of files) {
     if (!kindOf(f)) { toastError(`Unsupported file: ${f.name}`); continue; }
     try {
@@ -99,7 +106,7 @@ function insertLayer(l: MLayer, label: string) {
   mcommit(updateComp(c.id, (cc) => ({ ...cc, layers: [...cc.layers.slice(0, idx), l, ...cc.layers.slice(idx)] })), label);
   useMotion.setState({ selectedLayers: [l.id], selectedKeys: [] });
 }
-export function addSolid(color = '#4f8cff') { const c = comp(); if (c) insertLayer(newSolid(c, color, now(), c.width, c.height, `Solid ${c.layers.filter((l) => l.type === 'solid').length + 1}`), 'New Solid'); }
+export function addSolid(color = '#7c5cff') { const c = comp(); if (c) insertLayer(newSolid(c, color, now(), c.width, c.height, `Solid ${c.layers.filter((l) => l.type === 'solid').length + 1}`), 'New Solid'); }
 export function addText(text = 'Your text', position?: Vec3) { const c = comp(); if (c) { const l = newText(c, text, now(), { position }); insertLayer(l, 'New Text Layer'); return l.id; } return null; }
 export function addShape(kind: Parameters<typeof newShape>[1], o?: Parameters<typeof newShape>[3]) { const c = comp(); if (c) { const l = newShape(c, kind, now(), o); insertLayer(l, 'New Shape Layer'); return l.id; } return null; }
 export function addNull() { const c = comp(); if (c) insertLayer(newNull(c, now()), 'New Null Object'); }
@@ -296,6 +303,16 @@ export function setPropForLayers(ids: string[], path: string, fn: (p: Prop) => P
 export function toggleStopwatch(layerId: string, path: string) {
   const c = comp(); if (!c) return; const t = now();
   mcommit(updateLayer(c.id, layerId, (l) => { const p = getProp(l, path); return p ? setProp(l, path, toggleAnimated(p, t)) : l; }), 'Toggle Animation');
+}
+/** Expression on a property (undefined removes it); `off` keeps it but switches it off. */
+export function setExpression(layerId: string, path: string, x: string | undefined, off = false, mergeKey?: string) {
+  const c = comp(); if (!c) return;
+  mcommit(updateLayer(c.id, layerId, (l) => {
+    const p = getProp(l, path); if (!p) return l;
+    const np = { ...p } as Prop<PropValue>;
+    if (x === undefined) { delete np.x; delete np.xOff; } else { np.x = x; if (off) np.xOff = true; else delete np.xOff; }
+    return setProp(l, path, np);
+  }), x === undefined ? 'Remove Expression' : 'Edit Expression', mergeKey);
 }
 export function toggleKeyframe(layerId: string, path: string) {
   const c = comp(); if (!c) return; const t = now();
@@ -500,3 +517,60 @@ export function selectAllKeys(layerIds = useMotion.getState().selectedLayers) {
 
 export { makeKey, valueAt };
 export const forget = forgetAsset;
+
+/** Track matte (TrkMat): use another layer as the matte of this one. Like After Effects, the matte layer's video is switched off. */
+export function setTrackMatte(layerId: string, matteId: string | null, mode: import('./types').MatteMode = 'alpha') {
+  const c = comp(); if (!c) return;
+  mcommit(updateComp(c.id, (cc) => ({ ...cc, layers: cc.layers.map((l) => {
+    if (l.id === layerId) return { ...l, matte: matteId ? { id: matteId, mode } : null } as MLayer;
+    if (matteId && l.id === matteId) return { ...l, visible: false } as MLayer;
+    return l;
+  }) })), matteId ? 'Set Track Matte' : 'Remove Track Matte');
+}
+
+/** Align panel: line the selected layers up with the composition (one layer) or with each other. */
+export function alignLayers(how: 'left' | 'hcenter' | 'right' | 'top' | 'vcenter' | 'bottom', to: 'comp' | 'selection' = 'comp') {
+  const c = comp(); if (!c) return; const t = now();
+  const project = useMotion.getState().project;
+  const ids = useMotion.getState().selectedLayers;
+  const boxes = c.layers.filter((l) => ids.includes(l.id)).map((l) => {
+    const pts = R.layerCorners(project, c, l, t); if (!pts) return null;
+    const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y);
+    return { l, x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
+  }).filter((b): b is NonNullable<typeof b> => !!b);
+  if (!boxes.length) return;
+  const ref = to === 'comp' || boxes.length < 2 ? { x0: 0, x1: c.width, y0: 0, y1: c.height }
+    : { x0: Math.min(...boxes.map((b) => b.x0)), x1: Math.max(...boxes.map((b) => b.x1)), y0: Math.min(...boxes.map((b) => b.y0)), y1: Math.max(...boxes.map((b) => b.y1)) };
+  mcommit(updateComp(c.id, (cc) => ({ ...cc, layers: cc.layers.map((l) => {
+    const b = boxes.find((x) => x.l.id === l.id); if (!b) return l;
+    let dx = 0, dy = 0;
+    if (how === 'left') dx = ref.x0 - b.x0; else if (how === 'right') dx = ref.x1 - b.x1; else if (how === 'hcenter') dx = (ref.x0 + ref.x1) / 2 - (b.x0 + b.x1) / 2;
+    else if (how === 'top') dy = ref.y0 - b.y0; else if (how === 'bottom') dy = ref.y1 - b.y1; else dy = (ref.y0 + ref.y1) / 2 - (b.y0 + b.y1) / 2;
+    if (Math.abs(dx) < 1e-6 && Math.abs(dy) < 1e-6) return l;
+    const [px, py] = R.compDeltaToParent(cc, l, t, dx, dy);
+    const p = l.transform.position as Prop<Vec3>;
+    const v = rawValueAt(p, t) as Vec3;
+    return { ...l, transform: { ...l.transform, position: writeAt(l, p as Prop<PropValue>, t, [v[0] + px, v[1] + py, v[2]], cc.fps) as Prop<Vec3> } } as MLayer;
+  }) })), 'Align Layers');
+}
+
+/** Distribute three or more selected layers evenly (by their centres). */
+export function distributeLayers(axis: 'h' | 'v') {
+  const c = comp(); if (!c) return; const t = now();
+  const project = useMotion.getState().project;
+  const ids = useMotion.getState().selectedLayers;
+  const items = c.layers.filter((l) => ids.includes(l.id)).map((l) => {
+    const pts = R.layerCorners(project, c, l, t); if (!pts) return null;
+    const cx = pts.reduce((a, p) => a + p.x, 0) / pts.length, cy = pts.reduce((a, p) => a + p.y, 0) / pts.length;
+    return { l, v: axis === 'h' ? cx : cy };
+  }).filter((b): b is NonNullable<typeof b> => !!b).sort((a, b) => a.v - b.v);
+  if (items.length < 3) return;
+  const a = items[0].v, z = items[items.length - 1].v, step = (z - a) / (items.length - 1);
+  mcommit(updateComp(c.id, (cc) => ({ ...cc, layers: cc.layers.map((l) => {
+    const i = items.findIndex((x) => x.l.id === l.id); if (i <= 0 || i === items.length - 1) return l;
+    const d = a + step * i - items[i].v;
+    const [px, py] = R.compDeltaToParent(cc, l, t, axis === 'h' ? d : 0, axis === 'v' ? d : 0);
+    const p = l.transform.position as Prop<Vec3>; const v = rawValueAt(p, t) as Vec3;
+    return { ...l, transform: { ...l.transform, position: writeAt(l, p as Prop<PropValue>, t, [v[0] + px, v[1] + py, v[2]], cc.fps) as Prop<Vec3> } } as MLayer;
+  }) })), 'Distribute Layers');
+}

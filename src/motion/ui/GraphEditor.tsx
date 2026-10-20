@@ -7,7 +7,7 @@ import * as A from '../actions';
 import { propMeta } from './propTree';
 import { hexToRgb } from '../../utils/color';
 
-const DIM_COLORS = ['#ff6b6b', '#5ad17a', '#4f8cff'];
+const DIM_COLORS = ['#ff6b6b', '#5ad17a', '#7c5cff'];
 const PAD = 24;
 
 function dimsOf(v: PropValue): number[] | null {
@@ -133,21 +133,21 @@ export function GraphEditor({ comp, t, xOf, tOf, width }: { comp: Composition; t
   for (let v = Math.ceil(lo / vstep) * vstep; v <= hi; v += vstep) gridV.push(v);
 
   return (
-    <div ref={ref} className="absolute inset-0 bg-[#1b1e22] overflow-hidden touch-none" onPointerDown={(e) => { if (e.target === e.currentTarget || (e.target as Element).tagName === 'svg') { const r = ref.current!.getBoundingClientRect(); setTime(snapTime(tOf(e.clientX - r.left), comp.fps)); useMotion.setState({ selectedKeys: [] }); } }}>
+    <div ref={ref} className="absolute inset-0 bg-[#11111c] overflow-hidden touch-none" onPointerDown={(e) => { if (e.target === e.currentTarget || (e.target as Element).tagName === 'svg') { const r = ref.current!.getBoundingClientRect(); setTime(snapTime(tOf(e.clientX - r.left), comp.fps)); useMotion.setState({ selectedKeys: [] }); } }}>
       {toolbar}
       <svg width={width} height={h} className="absolute inset-0">
-        {gridT.map((x) => <line key={`t${x}`} x1={xOf(x)} x2={xOf(x)} y1={0} y2={h} stroke="#2a2f36" />)}
-        {gridV.map((v) => <g key={`v${v}`}><line x1={0} x2={width} y1={yOf(v)} y2={yOf(v)} stroke="#262a30" /><text x={4} y={yOf(v) - 2} fill="#69727e" fontSize="9">{isProgress ? '' : Math.round(v * 100) / 100}</text></g>)}
-        <line x1={xOf(t)} x2={xOf(t)} y1={0} y2={h} stroke="#4f8cff" />
+        {gridT.map((x) => <line key={`t${x}`} x1={xOf(x)} x2={xOf(x)} y1={0} y2={h} stroke="#1d1d2f" />)}
+        {gridV.map((v) => <g key={`v${v}`}><line x1={0} x2={width} y1={yOf(v)} y2={yOf(v)} stroke="#1b1b2b" /><text x={4} y={yOf(v) - 2} fill="#69727e" fontSize="9">{isProgress ? '' : Math.round(v * 100) / 100}</text></g>)}
+        <line x1={xOf(t)} x2={xOf(t)} y1={0} y2={h} stroke="#7c5cff" />
         {curves.map((pts, d) => <polyline key={d} fill="none" stroke={nd === 1 ? '#e8b04c' : DIM_COLORS[d]} strokeWidth={1.6} points={pts.map(([x, v]) => `${x},${yOf(v)}`).join(' ')} />)}
         {handles.map((hd, i) => <line key={`hl${i}`} x1={hd.ax} y1={hd.ay} x2={hd.x} y2={hd.y} stroke="#9aa3ae" strokeWidth={1} />)}
       </svg>
       {handles.map((hd, i) => (
-        <div key={`h${i}`} className="absolute w-[9px] h-[9px] -ml-[4.5px] -mt-[4.5px] rounded-full bg-[#ffd166] border border-[#1b1e22] cursor-move" style={{ left: hd.x, top: hd.y }}
+        <div key={`h${i}`} className="absolute w-[9px] h-[9px] -ml-[4.5px] -mt-[4.5px] rounded-full bg-[#ffd166] border border-[#11111c] cursor-move" style={{ left: hd.x, top: hd.y }}
           role="slider" aria-label={`${hd.which === 'out' ? 'Outgoing' : 'Incoming'} ease handle`} onPointerDown={(e) => dragHandle(e, hd)} />
       ))}
       {keys.map((k) => Array.from({ length: nd }, (_, d) => (
-        <div key={`${k.id}${d}`} className="absolute w-[9px] h-[9px] -ml-[4.5px] -mt-[4.5px] cursor-pointer" style={{ left: xOf(k.t), top: yOf(keyVal(k, d)), background: sel.has(k.id) ? '#ffb547' : '#e8eaed', border: '1px solid #1b1e22' }}
+        <div key={`${k.id}${d}`} className="absolute w-[9px] h-[9px] -ml-[4.5px] -mt-[4.5px] cursor-pointer" style={{ left: xOf(k.t), top: yOf(keyVal(k, d)), background: sel.has(k.id) ? '#ffb547' : '#e8eaed', border: '1px solid #11111c' }}
           role="button" aria-label="Keyframe" onPointerDown={(e) => dragKey(e, k, d)} />
       )))}
       <div className="absolute bottom-1.5 left-2 text-2xs text-faint">Drag keyframes to change time/value · drag yellow handles to shape the ease · Alt-drag keeps time</div>

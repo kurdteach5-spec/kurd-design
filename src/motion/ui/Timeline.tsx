@@ -6,6 +6,8 @@ import { formatTimecode, parseTimecode, snapTime } from '../anim';
 import { layerGroups, type PropMeta } from './propTree';
 import { Diamond, PropLine } from './fields';
 import { GraphEditor } from './GraphEditor';
+import { BLENDS } from './MotionProperties';
+import { useMotionUI } from '../uiState';
 import { assetData, useAssetVersion } from '../media/assets';
 import { Popover } from '../../components/ui/controls';
 import { useWindowSize } from '../../utils/useWindowSize';
@@ -16,7 +18,7 @@ import {
 
 const ROW = 22, LROW = 26;
 /** Width of the layer outline column; it narrows (and drops columns) on small screens. */
-type Outline = { w: number; parent: boolean; switches: boolean; av: boolean };
+type Outline = { w: number; parent: boolean; switches: boolean; av: boolean; modes?: boolean };
 const outlineFor = (total: number): Outline =>
   total >= 1000 ? { w: 460, parent: true, switches: true, av: true }
   : total >= 760 ? { w: 366, parent: false, switches: true, av: true }
@@ -62,7 +64,9 @@ export function Timeline() {
   const selected = useMotion((s) => s.selectedLayers);
   const selectedKeys = useMotion((s) => s.selectedKeys);
   const [width, setWidth] = useState(800);
-  const ol = outlineFor(useWindowSize().w);
+  const modes = useMotionUI((s) => s.modesColumn);
+  const ol0 = outlineFor(useWindowSize().w);
+  const ol: Outline = { ...ol0, modes, w: ol0.w + (modes && ol0.switches ? 94 : 0) };
   const LEFT_W = ol.w;
   const rightRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -95,7 +99,7 @@ export function Timeline() {
 
   return (
     <OutlineCtx.Provider value={ol}>
-    <div className="h-full flex flex-col min-h-0 bg-[#1e2126]" onDragOver={(e) => { if (e.dataTransfer.types.includes('text/kdm-item')) e.preventDefault(); }}
+    <div className="h-full flex flex-col min-h-0 bg-[#141421]" onDragOver={(e) => { if (e.dataTransfer.types.includes('text/kdm-item')) e.preventDefault(); }}
       onDrop={(e) => {
         const id = e.dataTransfer.getData('text/kdm-item'); if (!id) return;
         e.preventDefault(); e.stopPropagation();
@@ -107,7 +111,7 @@ export function Timeline() {
       <TimelineHeader comp={comp} t={t} onFit={fitAll} />
       <div className="flex border-b border-line shrink-0" style={{ height: 34 }}>
         <div className="shrink-0 border-e border-line flex items-end px-2 pb-1 gap-2 text-2xs text-faint select-none" style={{ width: LEFT_W }}>
-          <span className={ol.av ? 'w-[86px] whitespace-nowrap' : 'w-[22px]'}>{ol.av ? 'A/V · Solo · Lock' : ''}</span><span className="w-5">#</span><span className="flex-1 truncate">Layer Name</span>{ol.switches && <span className="w-[70px]">Switches</span>}{ol.parent && <span className="w-[92px]">Parent</span>}
+          <span className={ol.av ? 'w-[86px] whitespace-nowrap' : 'w-[22px]'}>{ol.av ? 'A/V · Solo · Lock' : ''}</span><span className="w-5">#</span><span className="flex-1 truncate">Layer Name</span>{ol.switches && (ol.modes ? <><span className="w-[76px]">Mode</span><span className="w-[84px]">TrkMat</span></> : <span className="w-[70px]">Switches</span>)}{ol.parent && <span className="w-[92px]">Parent</span>}
         </div>
         <div ref={rightRef} className="relative flex-1 min-w-0 overflow-hidden">
           <Ruler comp={comp} width={width} xOf={xOf} tOf={tOf} t={t} />
@@ -160,6 +164,7 @@ function TimelineHeader({ comp, t, onFit }: { comp: Composition; t: number; onFi
       <HeaderToggle on={!tl.showShy} label="Hide shy layers" onClick={() => setTl({ showShy: !tl.showShy })}><span className="text-[11px]">shy</span></HeaderToggle>
       <HeaderToggle on={tl.graph} label="Graph Editor (Shift+F3)" onClick={() => setTl({ graph: !tl.graph })}><LuChartSpline size={14} /></HeaderToggle>
       <HeaderToggle on={false} label="Add marker (*)" onClick={() => A.addMarker()}><LuFlag size={14} /></HeaderToggle>
+      <ModesToggle />
       <div className="flex-1 min-w-[8px]" />
       <span className="text-faint text-xs hidden md:inline">Zoom</span>
       <input type="range" className="slider w-[90px] md:w-[120px] shrink-0" min={0} max={100} value={Math.round((Math.log(tl.pxPerSec / 4) / Math.log(1000)) * 100)} aria-label="Timeline zoom"
@@ -168,6 +173,10 @@ function TimelineHeader({ comp, t, onFit }: { comp: Composition; t: number; onFi
       <button type="button" className="btn h-[24px] px-2 text-xs shrink-0" onClick={onFit}>Fit</button>
     </div>
   );
+}
+function ModesToggle() {
+  const on = useMotionUI((s) => s.modesColumn);
+  return <button type="button" className={`h-[24px] px-2 shrink-0 rounded-[4px] text-[11px] whitespace-nowrap border ${on ? 'border-[#7c5cff88] text-[#c4b5fd] bg-accent-soft' : 'border-line text-muted hover:text-ink'}`} aria-pressed={on} data-tip="Toggle Switches / Modes (F4): blending mode and track matte columns" onClick={() => useMotionUI.setState({ modesColumn: !on })}>{on ? 'Modes' : 'Switches'}</button>;
 }
 function AutoKeyButton() {
   const on = useMotion((s) => s.autoKey);
@@ -260,7 +269,7 @@ function Ruler({ comp, width, xOf, tOf, t }: { comp: Composition; width: number;
       )}
       {/* time indicator head */}
       <div className="absolute bottom-0 -ml-[6px] pointer-events-none" style={{ left: xOf(t) }}>
-        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden><path d="M0 0h12v6l-6 6-6-6z" fill="#4f8cff" /></svg>
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden><path d="M0 0h12v6l-6 6-6-6z" fill="#7c5cff" /></svg>
       </div>
     </div>
   );
@@ -288,7 +297,7 @@ function OutlineRow({ r, comp, t, selected }: { r: Row; comp: Composition; t: nu
   if (r.kind === 'group') {
     const open = !!expanded[r.key];
     return (
-      <div className="flex items-center gap-1 text-xs text-ink cursor-default hover:bg-[#262a30]" style={{ height: ROW, paddingInlineStart: 26 + r.depth * 12 }} onClick={() => toggle(r.key)}>
+      <div className="flex items-center gap-1 text-xs text-ink cursor-default hover:bg-[#1b1b2b]" style={{ height: ROW, paddingInlineStart: 26 + r.depth * 12 }} onClick={() => toggle(r.key)}>
         <LuChevronRight size={12} className={`transition-transform text-muted ${open ? 'rotate-90' : ''}`} />
         {r.id === 'effects' && <LuSlidersHorizontal size={11} className="text-muted" />}
         <span>{r.label}</span>
@@ -301,7 +310,7 @@ function OutlineRow({ r, comp, t, selected }: { r: Row; comp: Composition; t: nu
     if (r.group === 'masks') {
       const m = r.layer.masks.find((x) => x.id === r.id)!;
       return (
-        <div className="flex items-center gap-1.5 text-xs cursor-default hover:bg-[#262a30]" style={{ height: ROW, paddingInlineStart: 26 + 2 * 12 }} onClick={() => toggle(r.key, true)}>
+        <div className="flex items-center gap-1.5 text-xs cursor-default hover:bg-[#1b1b2b]" style={{ height: ROW, paddingInlineStart: 26 + 2 * 12 }} onClick={() => toggle(r.key, true)}>
           <LuChevronRight size={12} className={`transition-transform text-muted ${open ? 'rotate-90' : ''}`} />
           <span className="w-2.5 h-2.5 rounded-[2px] bg-[#f2c94c]" aria-hidden />
           <span className="truncate flex-1 min-w-0">{m.name}</span>
@@ -315,7 +324,7 @@ function OutlineRow({ r, comp, t, selected }: { r: Row; comp: Composition; t: nu
     }
     const fx = r.layer.effects.find((x) => x.id === r.id)!;
     return (
-      <div className="flex items-center gap-1.5 text-xs cursor-default hover:bg-[#262a30]" style={{ height: ROW, paddingInlineStart: 26 + 2 * 12 }} onClick={() => toggle(r.key, true)}>
+      <div className="flex items-center gap-1.5 text-xs cursor-default hover:bg-[#1b1b2b]" style={{ height: ROW, paddingInlineStart: 26 + 2 * 12 }} onClick={() => toggle(r.key, true)}>
         <LuChevronRight size={12} className={`transition-transform text-muted ${open ? 'rotate-90' : ''}`} />
         <input type="checkbox" checked={fx.enabled} aria-label="Effect on/off" onClick={(e) => e.stopPropagation()} onChange={() => A.toggleEffect(r.layer.id, fx.id)} />
         <span className={`truncate flex-1 min-w-0 ${fx.enabled ? '' : 'text-faint line-through'}`}>{r.label}</span>
@@ -372,7 +381,7 @@ function LayerOutline({ l, index, comp, selected, open, onToggle }: { l: MLayer;
         A.reorderLayers(ids, drop === 'below' ? index + 1 : index);
       }}
       onClick={(e) => { const mod = e.ctrlKey || e.metaKey; if (e.shiftKey) { const s = useMotion.getState(); const last = comp.layers.findIndex((x) => x.id === s.selectedLayers[s.selectedLayers.length - 1]); const [a, b] = last < 0 ? [index, index] : [Math.min(last, index), Math.max(last, index)]; A.selectLayers(comp.layers.slice(a, b + 1).map((x) => x.id)); } else if (mod) useMotion.setState((s) => ({ selectedLayers: s.selectedLayers.includes(l.id) ? s.selectedLayers.filter((x) => x !== l.id) : [...s.selectedLayers, l.id] })); else A.selectLayers([l.id]); }}
-      className={`relative flex items-center gap-1 pe-1.5 cursor-default border-b border-[#2a2e34] ${selected ? 'bg-[#2f4670]' : 'bg-[#22262b] hover:bg-[#282d33]'}`}
+      className={`relative flex items-center gap-1 pe-1.5 cursor-default border-b border-[#1d1d2e] ${selected ? 'bg-[#3a2f73]' : 'bg-[#171726] hover:bg-[#1d1d2d]'}`}
       style={{ height: LROW }}>
       {drop && <div className={`absolute left-0 right-0 h-0.5 bg-accent ${drop === 'above' ? '-top-px' : '-bottom-px'}`} />}
       <span className={`flex items-center gap-0.5 ps-1 shrink-0 ${ol.av ? 'w-[86px]' : 'w-[24px]'}`}>
@@ -396,7 +405,8 @@ function LayerOutline({ l, index, comp, selected, open, onToggle }: { l: MLayer;
             onBlur={(e) => { A.setLayer(l.id, { name: e.currentTarget.value.trim() || l.name }, 'Rename Layer'); setRenaming(false); }} />
         ) : <span className={`block truncate text-xs ${l.visible ? 'text-ink' : 'text-faint'}`} onDoubleClick={(e) => { e.stopPropagation(); if (l.type === 'precomp') { A.openComp(l.compId); return; } setRenaming(true); }} data-tip={l.type === 'precomp' ? 'Double-click to open the composition' : undefined}>{l.name}</span>}
       </div>
-      {ol.switches && <span className="flex items-center gap-0.5 w-[70px] shrink-0">
+      {ol.switches && ol.modes && <ModeCols l={l} comp={comp} />}
+      {ol.switches && !ol.modes && <span className="flex items-center gap-0.5 w-[70px] shrink-0">
         <Switch on={!l.shy} label="Shy" onClick={() => A.setLayer(l.id, { shy: !l.shy }, 'Shy')}><span className="text-[9px]">{l.shy ? '◡' : '◠'}</span></Switch>
         <Switch on={l.effectsOn} label="Effects on/off (fx)" onClick={() => A.setLayer(l.id, { effectsOn: !l.effectsOn }, 'Effects On/Off')} dim={!l.effects.length}><span className="text-[10px] italic font-semibold">fx</span></Switch>
         <Switch on={l.motionBlur} label="Motion blur" onClick={() => A.setLayer(l.id, { motionBlur: !l.motionBlur }, 'Motion Blur')} dim={!visual}><span className="text-[9px] font-bold">◎</span></Switch>
@@ -407,6 +417,33 @@ function LayerOutline({ l, index, comp, selected, open, onToggle }: { l: MLayer;
         {comp.layers.filter((x) => x.id !== l.id).map((x) => <option key={x.id} value={x.id}>{`${comp.layers.indexOf(x) + 1}. ${x.name}`}</option>)}
       </select>}
     </div>
+  );
+}
+
+const MATTES: { value: string; label: string }[] = [
+  { value: 'alpha', label: 'Alpha Matte' }, { value: 'alphaInv', label: 'Alpha Inverted Matte' }, { value: 'luma', label: 'Luma Matte' }, { value: 'lumaInv', label: 'Luma Inverted Matte' },
+];
+/** Mode (blending) and TrkMat (track matte) columns, shown instead of the switches (F4), as in After Effects. */
+function ModeCols({ l, comp }: { l: MLayer; comp: Composition }) {
+  const visual = l.type !== 'audio' && l.type !== 'null' && l.type !== 'camera';
+  if (!visual) return <span className="w-[164px] shrink-0" />;
+  const idx = comp.layers.indexOf(l);
+  const above = idx > 0 ? comp.layers[idx - 1] : null;
+  const matteId = l.matte?.id ?? '';
+  return (
+    <span className="flex items-center gap-1 w-[164px] shrink-0" onClick={(e) => e.stopPropagation()}>
+      <select className="field h-[18px] w-[76px] text-2xs py-0" value={l.blend} aria-label="Blending mode" data-tip="Blending mode" onChange={(e) => A.setLayer(l.id, { blend: e.target.value as MLayer['blend'] }, 'Blending Mode')}>
+        {BLENDS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
+      </select>
+      <select className="field h-[18px] w-[84px] text-2xs py-0" value={matteId ? `${matteId}|${l.matte!.mode}` : ''} aria-label="Track matte" data-tip="Track matte: show this layer through another layer's alpha or luminance"
+        onChange={(e) => { const [id, mode] = e.target.value.split('|'); A.setTrackMatte(l.id, id || null, (mode || 'alpha') as 'alpha'); }}>
+        <option value="">No Matte</option>
+        {above && MATTES.map((m) => <option key={`a${m.value}`} value={`${above.id}|${m.value}`}>{`${m.label} “${above.name}”`}</option>)}
+        {comp.layers.filter((x) => x.id !== l.id && x.id !== above?.id && x.type !== 'audio' && x.type !== 'null' && x.type !== 'camera').map((x) => <option key={x.id} value={`${x.id}|alpha`}>{`${comp.layers.indexOf(x) + 1}. ${x.name} (alpha)`}</option>)}
+        {matteId && !comp.layers.some((x) => x.id === matteId) && <option value={`${matteId}|${l.matte!.mode}`}>Missing layer</option>}
+        {matteId && matteId !== above?.id && comp.layers.some((x) => x.id === matteId) && l.matte!.mode !== 'alpha' && <option value={`${matteId}|${l.matte!.mode}`}>{comp.layers.find((x) => x.id === matteId)!.name}</option>}
+      </select>
+    </span>
   );
 }
 
@@ -504,7 +541,7 @@ function Tracks({ comp, rows, width, xOf, tOf, t, keySel, selected }: { comp: Co
           }
           return (
             <div key={i}>
-              <div className="absolute left-0 right-0 border-b border-[#2a2e34] pointer-events-none" style={{ top, height: h }} />
+              <div className="absolute left-0 right-0 border-b border-[#1d1d2e] pointer-events-none" style={{ top, height: h }} />
               {ghost}
               <div className={`absolute rounded-[3px] overflow-hidden cursor-grab ${sel ? 'ring-1 ring-white/80' : ''}`} role="presentation"
                 style={{ left: a, width: Math.max(3, b - a), top: top + 3, height: h - 6, background: `${l.label}${sel ? 'cc' : '77'}` }}
@@ -519,10 +556,10 @@ function Tracks({ comp, rows, width, xOf, tOf, t, keySel, selected }: { comp: Co
             </div>
           );
         }
-        if (r.kind !== 'prop') return <div key={i} className="absolute left-0 right-0 border-b border-[#24282e] pointer-events-none" style={{ top, height: h }} />;
+        if (r.kind !== 'prop') return <div key={i} className="absolute left-0 right-0 border-b border-[#191928] pointer-events-none" style={{ top, height: h }} />;
         const prop = getProp(r.layer, r.meta.path);
         return (
-          <div key={i} className="absolute left-0 right-0 border-b border-[#24282e]" style={{ top, height: h }}>
+          <div key={i} className="absolute left-0 right-0 border-b border-[#191928]" style={{ top, height: h }}>
             {prop && prop.k.length > 1 && <div className="absolute top-1/2 h-px bg-[#596270] pointer-events-none" style={{ left: xOf(prop.k[0].t), width: xOf(prop.k[prop.k.length - 1].t) - xOf(prop.k[0].t) }} />}
             {prop?.k.map((k) => (
               <div key={k.id} className="absolute top-1/2 -translate-y-1/2 -ml-[6px] w-[12px] h-[12px] flex items-center justify-center cursor-pointer" style={{ left: xOf(k.t) }}
@@ -598,8 +635,8 @@ function HScroll({ comp, width }: { comp: Composition; width: number }) {
   const total = Math.max(comp.duration * tl.pxPerSec + 80, width);
   const frac = Math.min(1, width / total), pos = Math.min(1 - frac, tl.scroll / total);
   return (
-    <div className="h-3 shrink-0 bg-[#1a1d21] border-t border-line relative" style={{ marginInlineStart: useContext(OutlineCtx).w }}>
-      <div className="absolute top-[3px] h-[6px] rounded-full bg-[#4a525d] hover:bg-[#5b6470] cursor-grab touch-none" style={{ left: `${pos * 100}%`, width: `${frac * 100}%` }}
+    <div className="h-3 shrink-0 bg-[#10101a] border-t border-line relative" style={{ marginInlineStart: useContext(OutlineCtx).w }}>
+      <div className="absolute top-[3px] h-[6px] rounded-full bg-[#3a3a58] hover:bg-[#5b6470] cursor-grab touch-none" style={{ left: `${pos * 100}%`, width: `${frac * 100}%` }}
         onPointerDown={(e) => {
           const el = e.currentTarget; el.setPointerCapture(e.pointerId); const x0 = e.clientX, s0 = tl.scroll; const pw = el.parentElement!.clientWidth;
           const mm = (ev: PointerEvent) => useMotion.setState((s) => ({ timeline: { ...s.timeline, scroll: Math.max(0, Math.min(total - width, s0 + ((ev.clientX - x0) / pw) * total)) } }));

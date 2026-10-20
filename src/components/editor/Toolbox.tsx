@@ -69,7 +69,7 @@ function ColorWells() {
     <div className="mt-2 mb-1 relative w-[34px] h-[40px] shrink-0">
       <button type="button" aria-label="Background color" data-tip="Background color" className="absolute end-0 bottom-1 w-[20px] h-[20px] rounded-[3px] border border-[#5a616b] cursor-pointer"
         style={{ background: bg }} onClick={(e) => setEdit({ which: 'bg', el: e.currentTarget })} />
-      <button type="button" aria-label="Foreground color" data-tip="Foreground color" className="absolute start-0 top-0 w-[20px] h-[20px] rounded-[3px] border border-[#5a616b] shadow-[0_0_0_1.5px_#24282e] cursor-pointer"
+      <button type="button" aria-label="Foreground color" data-tip="Foreground color" className="absolute start-0 top-0 w-[20px] h-[20px] rounded-[3px] border border-[#5a616b] shadow-[0_0_0_1.5px_#191928] cursor-pointer"
         style={{ background: fg }} onClick={(e) => setEdit({ which: 'fg', el: e.currentTarget })} />
       <button type="button" aria-label="Swap colors" data-tip="Swap colors" data-tip-key="X" className="absolute end-0 -top-0.5 text-muted hover:text-ink" onClick={swapColors}><LuArrowLeftRight size={10} /></button>
       <button type="button" aria-label="Default colors" data-tip="Default colors" data-tip-key="D" className="absolute start-0 bottom-0 w-[11px] h-[11px]" onClick={resetColors}>

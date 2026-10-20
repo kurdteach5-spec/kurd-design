@@ -75,7 +75,7 @@ export function NewDocumentDialog() {
             <Select value={bg} onChange={setBg} options={[{ value: 'white', label: 'White' }, { value: 'black', label: 'Black' }, { value: 'transparent', label: 'Transparent' }, { value: 'color', label: 'Custom color' }]} />
             {bg === 'color' && <ColorButton label="Background color" color={bgColor} onChange={setBgColor} />}
           </Row>
-          <div className="flex items-center justify-center h-[110px] rounded-[6px] bg-[#1d2025] border border-line-soft">
+          <div className="flex items-center justify-center h-[110px] rounded-[6px] bg-[#12121e] border border-line-soft">
             {(() => { const k = 90 / Math.max(pw || 1, ph || 1); return <div className={bg === 'transparent' ? 'checker' : ''} style={{ width: Math.max(6, pw * k), height: Math.max(6, ph * k), background: bg === 'white' ? '#fff' : bg === 'black' ? '#000' : bg === 'color' ? bgColor : undefined, boxShadow: '0 2px 10px rgba(0,0,0,.4)' }} />; })()}
           </div>
         </div>
@@ -182,7 +182,7 @@ export function ExportDialog() {
           {format === 'svg' && <div className="text-faint">Text and shapes export as editable vectors; pixel layers, masks and effects are embedded as images.</div>}
           {format === 'psd' && <div className="text-faint">Keeps layers, names, order, groups, opacity, blend modes, masks and visibility. Text is saved as pixels.</div>}
         </div>
-        <div className="flex items-center justify-center rounded-[6px] bg-[#1d2025] border border-line-soft p-2 min-h-[220px]">
+        <div className="flex items-center justify-center rounded-[6px] bg-[#12121e] border border-line-soft p-2 min-h-[220px]">
           {preview && <img src={preview} alt="Export preview" className={`max-w-full max-h-[220px] ${supportsAlpha && transparent ? 'checker' : ''}`} style={!supportsAlpha || !transparent ? { background: bg } : undefined} />}
         </div>
       </div>

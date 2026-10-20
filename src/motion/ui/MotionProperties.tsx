@@ -1,5 +1,5 @@
 // Properties panel for the Motion workspace (layer settings + effect controls).
-import type { BlendMode, Composition, MLayer, ShapeKind, TextAnimatorType } from '../types';
+import type { BlendMode, Composition, Gradient, MLayer, Prop, PropValue, Repeater, ShapeKind, TextAnimatorType, TextRangeAnimator, Vec2 } from '../types';
 import { useMotion, activeComp } from '../store';
 import * as A from '../actions';
 import { formatTimecode } from '../anim';
@@ -87,6 +87,8 @@ function LayerProps({ l, comp, t }: { l: MLayer; comp: Composition; t: number })
         </Row>
         {l.type !== 'audio' && l.type !== 'null' && l.type !== 'camera' && <Row label="Blend mode"><Select value={l.blend} width="100%" options={BLENDS} onChange={(v) => set({ blend: v }, 'Blending Mode')} /></Row>}
         <div className="flex flex-wrap gap-x-3 gap-y-1">
+          {(l.type === 'precomp' || l.type === 'video') && <Checkbox checked={!!l.timeRemap} label="Time Remap" onChange={(v) => set({ timeRemap: v ? { v: 0, k: [{ id: `k_tr${Date.now()}`, t: l.inPoint, v: (l.inPoint - l.start) * l.speed, interp: 'linear', out: [1 / 3, 1 / 3], in: [2 / 3, 2 / 3] }, { id: `k_tr${Date.now() + 1}`, t: l.outPoint, v: (l.outPoint - l.start) * l.speed, interp: 'linear', out: [1 / 3, 1 / 3], in: [2 / 3, 2 / 3] }] } : null } as Partial<MLayer>, v ? 'Enable Time Remapping' : 'Remove Time Remapping')} />}
+          {l.type !== 'audio' && l.type !== 'camera' && <Checkbox checked={!!l.autoOrient} label="Auto-Orient" onChange={(v) => set({ autoOrient: v }, 'Auto-Orient')} />}
           {l.type !== 'audio' && l.type !== 'camera' && <Checkbox checked={l.threeD} label="3D layer" onChange={(v) => set({ threeD: v }, '3D Layer')} />}
           {l.type !== 'audio' && <Checkbox checked={l.motionBlur} label="Motion blur" onChange={(v) => set({ motionBlur: v }, 'Motion Blur')} />}
           <Checkbox checked={l.solo} label="Solo" onChange={(v) => set({ solo: v }, 'Solo')} />
@@ -100,6 +102,12 @@ function LayerProps({ l, comp, t }: { l: MLayer; comp: Composition; t: number })
           <Row label="Type"><Select value={l.shape.kind} width="100%" options={(['rect', 'ellipse', 'polygon', 'star', 'line', 'arrow', 'path'] as ShapeKind[]).map((k) => ({ value: k, label: { rect: 'Rectangle', ellipse: 'Ellipse', polygon: 'Polygon', star: 'Star', line: 'Line', arrow: 'Arrow', path: 'Custom Path' }[k] }))} onChange={(v) => set({ shape: { ...l.shape, kind: v } } as Partial<MLayer>, 'Shape Type')} /></Row>
           {(l.shape.kind === 'polygon' || l.shape.kind === 'star') && <Row label="Points"><ScrubNumber value={l.shape.sides} min={3} max={64} label="Points" onChange={(v) => set({ shape: { ...l.shape, sides: Math.round(v) } } as Partial<MLayer>, 'Shape Points', `sides-${l.id}`)} /></Row>}
           <div className="flex gap-3"><Checkbox checked={l.shape.fillOn} label="Fill" onChange={(v) => set({ shape: { ...l.shape, fillOn: v } } as Partial<MLayer>, 'Fill')} /><Checkbox checked={l.shape.strokeOn} label="Stroke" onChange={(v) => set({ shape: { ...l.shape, strokeOn: v } } as Partial<MLayer>, 'Stroke')} /></div>
+          <GradientRow l={l} which="fillGradient" label="Fill type" />
+          <GradientRow l={l} which="strokeGradient" label="Stroke type" />
+          <div className="flex flex-wrap gap-x-3 gap-y-1">
+            <Checkbox checked={!!l.shape.repeater} label="Repeater" onChange={(v) => set({ shape: { ...l.shape, repeater: v ? newRepeater() : null } } as Partial<MLayer>, v ? 'Add Repeater' : 'Remove Repeater')} />
+            {!l.shape.roundCorners && <button type="button" className="text-xs text-[#a78bfa] hover:underline" onClick={() => set({ shape: { ...l.shape, roundCorners: { v: 20, k: [] }, trimOffset: l.shape.trimOffset ?? { v: 0, k: [] } } } as Partial<MLayer>, 'Add Round Corners')}>+ Round Corners</button>}
+          </div>
         </Section>
       )}
       {l.type === 'solid' && (
@@ -147,7 +155,16 @@ function LayerProps({ l, comp, t }: { l: MLayer; comp: Composition; t: number })
         <div className="text-2xs text-faint">Draw masks with the shape tools or the Pen tool set to “Mask”. Drag mask points in the viewer.</div>
       </Section>
 
-      <Section title={`Effects${l.effects.length ? ` (${l.effects.length})` : ''}`} defaultOpen>
+      <LayerEffects l={l} comp={comp} t={t} />
+    </div>
+  );
+}
+
+/** The layer's effects with all their settings (also shown on its own as the Effect Controls panel). */
+export function LayerEffects({ l, comp, t }: { l: MLayer; comp: Composition; t: number }) {
+  const groups = layerGroups(l);
+  return (
+    <Section title={`Effects${l.effects.length ? ` (${l.effects.length})` : ''}`} defaultOpen>
         {!l.effects.length && <div className="text-2xs text-faint">Add effects from the Effect menu or the Effects & Presets panel. Every setting can be keyframed.</div>}
         {l.effects.map((e) => {
           const g = groups.find((x) => x.id === 'effects')?.sub?.find((s) => s.id === e.id);
@@ -167,6 +184,20 @@ function LayerProps({ l, comp, t }: { l: MLayer; comp: Composition; t: number })
           );
         })}
       </Section>
+  );
+}
+
+/** Effect Controls panel (like After Effects): the effects of the selected layer. */
+export function EffectControls() {
+  const comp = useMotion((s) => activeComp(s));
+  const sel = useMotion((s) => s.selectedLayers);
+  const t = useMotion((s) => (s.activeCompId ? s.times[s.activeCompId] ?? 0 : 0));
+  const l = comp?.layers.find((x) => x.id === sel[0]);
+  if (!comp || !l) return <div className="p-4 text-muted text-xs">Select a layer to see its effects. Add effects from the Effect menu or the Effects & Presets panel.</div>;
+  return (
+    <div className="flex flex-col">
+      <div className="px-3 py-2 border-b border-line-soft flex items-center gap-2 text-xs"><span className="w-2.5 h-2.5 rounded-[2px] shrink-0" style={{ background: l.label }} /><span className="text-muted">{comp.name}</span><span className="text-faint">·</span><span className="text-ink-strong truncate" translate="no">{l.name}</span></div>
+      <LayerEffects l={l} comp={comp} t={t} />
     </div>
   );
 }
@@ -194,6 +225,97 @@ function TextSettings({ l }: { l: Extract<MLayer, { type: 'text' }> }) {
         <div className="text-2xs text-faint">Animate “Animator Progress” (0 → 100%) below to reveal the text.</div>
         {(l.text.animator.type === 'charReveal' || l.text.animator.type === 'wordReveal') && <Row label="Rise"><ScrubNumber value={l.text.animator.offsetY} unit="px" label="Rise distance" onChange={(v) => set({ animator: { ...l.text.animator, offsetY: v } }, 'Animator', `ay-${l.id}`)} /><Checkbox checked={l.text.animator.fade} label="Fade" onChange={(v) => set({ animator: { ...l.text.animator, fade: v } }, 'Animator')} /></Row>}
       </>}
+      <RangeAnimators l={l} />
     </Section>
+  );
+}
+
+function newRepeater(): Repeater {
+  const p = <T extends PropValue>(v: T) => ({ v, k: [] }) as Prop<T>;
+  return { copies: p(3), offset: p(0), anchor: p<Vec2>([0, 0]), position: p<Vec2>([100, 0]), scale: p<Vec2>([100, 100]), rotation: p(0), startOpacity: p(100), endOpacity: p(100), composite: 'below' };
+}
+
+/** Solid colour or a linear / radial gradient with editable colour stops */
+function GradientRow({ l, which, label }: { l: Extract<MLayer, { type: 'shape' }>; which: 'fillGradient' | 'strokeGradient'; label: string }) {
+  const g = l.shape[which] ?? null;
+  const set = (ng: Gradient | null, lab: string) => A.setLayer(l.id, { shape: { ...l.shape, [which]: ng } } as Partial<MLayer>, lab);
+  const sz = l.shape.size.v;
+  const def = (type: 'linear' | 'radial'): Gradient => ({ type, start: { v: type === 'radial' ? [0, 0] : [-sz[0] / 2, 0], k: [] }, end: { v: [sz[0] / 2, 0], k: [] }, stops: [{ o: 0, c: which === 'fillGradient' ? l.shape.fill.v : l.shape.stroke.v, a: 1 }, { o: 1, c: '#ffffff', a: 1 }] });
+  return (
+    <div className="flex flex-col gap-1">
+      <Row label={label}>
+        <select className="field h-[22px] text-xs flex-1" value={g ? g.type : 'solid'} aria-label={label} onChange={(e) => { const v = e.target.value; set(v === 'solid' ? null : g ? { ...g, type: v as 'linear' | 'radial' } : def(v as 'linear' | 'radial'), 'Gradient'); }}>
+          <option value="solid">Solid colour</option><option value="linear">Linear gradient</option><option value="radial">Radial gradient</option>
+        </select>
+      </Row>
+      {g && (
+        <div className="flex flex-col gap-1 ps-[100px]">
+          <div className="h-3 rounded-[3px] border border-line" style={{ background: `linear-gradient(90deg, ${[...g.stops].sort((a, b) => a.o - b.o).map((s) => `${s.c} ${Math.round(s.o * 100)}%`).join(', ')})` }} aria-hidden />
+          {g.stops.map((st, i) => (
+            <div key={i} className="flex items-center gap-1.5">
+              <ColorButton color={st.c} size={16} label={`Stop ${i + 1} colour`} onChange={(c) => set({ ...g, stops: g.stops.map((x, j) => (j === i ? { ...x, c } : x)) }, 'Gradient Colour')} />
+              <ScrubNumber value={Math.round(st.o * 100)} min={0} max={100} unit="%" label={`Stop ${i + 1} position`} onChange={(v) => set({ ...g, stops: g.stops.map((x, j) => (j === i ? { ...x, o: v / 100 } : x)) }, 'Gradient Stop')} />
+              <ScrubNumber value={Math.round(st.a * 100)} min={0} max={100} unit="%" label={`Stop ${i + 1} opacity`} onChange={(v) => set({ ...g, stops: g.stops.map((x, j) => (j === i ? { ...x, a: v / 100 } : x)) }, 'Gradient Opacity')} />
+              {g.stops.length > 2 && <button type="button" className="icon-btn !w-5 !h-5" aria-label="Remove stop" onClick={() => set({ ...g, stops: g.stops.filter((_, j) => j !== i) }, 'Remove Gradient Stop')}><LuTrash2 size={11} /></button>}
+            </div>
+          ))}
+          <button type="button" className="self-start text-xs text-[#a78bfa] hover:underline" onClick={() => set({ ...g, stops: [...g.stops, { o: 0.5, c: '#888888', a: 1 }] }, 'Add Gradient Stop')}>+ Colour stop</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const ANIM_PROPS: { key: 'position' | 'scale' | 'rotation' | 'opacity' | 'fill' | 'tracking'; label: string; def: PropValue }[] = [
+  { key: 'opacity', label: 'Opacity', def: 0 }, { key: 'position', label: 'Position', def: [0, 40] }, { key: 'scale', label: 'Scale', def: 0 },
+  { key: 'rotation', label: 'Rotation', def: 45 }, { key: 'fill', label: 'Fill Color', def: '#ffb547' }, { key: 'tracking', label: 'Tracking', def: 10 },
+];
+/** After Effects text animators: Animate ▸ Opacity / Position / Scale… with a Range Selector */
+function RangeAnimators({ l }: { l: Extract<MLayer, { type: 'text' }> }) {
+  const list = l.text.animators ?? [];
+  const t = useMotion((s) => (s.activeCompId ? s.times[s.activeCompId] ?? 0 : 0));
+  const comp = useMotion((s) => activeComp(s));
+  const save = (animators: TextRangeAnimator[], label: string) => A.setLayer(l.id, { text: { ...l.text, animators } } as Partial<MLayer>, label);
+  const p = <T extends PropValue>(v: T) => ({ v, k: [] }) as Prop<T>;
+  const add = (key: (typeof ANIM_PROPS)[number]['key']) => {
+    const d = ANIM_PROPS.find((x) => x.key === key)!;
+    const fps = comp?.fps ?? 30;
+    // a ready range: the selector end sweeps 0 → 100% over one second from now (the classic reveal)
+    const end: Prop<number> = { v: 0, k: [{ id: `k_${Date.now().toString(36)}a`, t, v: 0, interp: 'bezier', out: [0.33, 0], in: [0.67, 1] }, { id: `k_${Date.now().toString(36)}b`, t: t + Math.round(fps) / fps, v: 100, interp: 'bezier', out: [0.33, 0], in: [0.67, 1] }] };
+    const a: TextRangeAnimator = { id: `tan${Date.now().toString(36)}`, name: `Animator ${list.length + 1}`, basedOn: 'chars', shape: 'square', start: p(0), end, offset: p(0), amount: p(100), [key]: p(d.def as never) };
+    // the selected units take the property value; the reveal works by inverting: selector covers what is not yet shown
+    a.start = { ...end, k: end.k.map((k) => ({ ...k, id: `${k.id}s` })) }; a.end = p(100);
+    save([...list, a], 'Add Text Animator');
+  };
+  return (
+    <div className="flex flex-col gap-1.5 pt-1 border-t border-line-soft">
+      <div className="flex items-center gap-2"><span className="text-xs text-muted flex-1">Text animators (range selector)</span>
+        <select className="field h-[22px] text-xs" value="" aria-label="Animate" onChange={(e) => { if (e.target.value) add(e.target.value as 'opacity'); }}>
+          <option value="">Animate ▸</option>{ANIM_PROPS.map((x) => <option key={x.key} value={x.key}>{x.label}</option>)}
+        </select>
+      </div>
+      {list.map((a) => {
+        const upd = (patch: Partial<TextRangeAnimator>, lab = 'Text Animator') => save(list.map((x) => (x.id === a.id ? { ...x, ...patch } : x)), lab);
+        const metas = [
+          { path: `tanim:${a.id}.start`, label: 'Start', kind: 'percent' as const }, { path: `tanim:${a.id}.end`, label: 'End', kind: 'percent' as const },
+          { path: `tanim:${a.id}.offset`, label: 'Offset', kind: 'percent' as const },
+          ...ANIM_PROPS.filter((x) => a[x.key]).map((x) => ({ path: `tanim:${a.id}.${x.key}`, label: x.label, kind: (x.key === 'position' ? 'vec2' : x.key === 'fill' ? 'color' : x.key === 'rotation' ? 'angle' : x.key === 'tracking' ? 'number' : 'percent') as 'percent' })),
+        ];
+        return (
+          <div key={a.id} className="rounded-[6px] border border-line-soft p-1.5 flex flex-col gap-0.5">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-ink-strong flex-1 truncate">{a.name}</span>
+              <select className="field h-[20px] text-2xs" value={a.basedOn} aria-label="Based on" onChange={(e) => upd({ basedOn: e.target.value as TextRangeAnimator['basedOn'] })}><option value="chars">Characters</option><option value="words">Words</option><option value="lines">Lines</option></select>
+              <select className="field h-[20px] text-2xs" value={a.shape} aria-label="Shape" onChange={(e) => upd({ shape: e.target.value as TextRangeAnimator['shape'] })}><option value="square">Square</option><option value="rampUp">Ramp Up</option><option value="rampDown">Ramp Down</option><option value="triangle">Triangle</option><option value="round">Round</option><option value="smooth">Smooth</option></select>
+              <button type="button" className="icon-btn !w-5 !h-5" aria-label="Remove animator" onClick={() => save(list.filter((x) => x.id !== a.id), 'Remove Text Animator')}><LuTrash2 size={11} /></button>
+            </div>
+            {comp && metas.map((m) => <PropLine key={m.path} layer={l} meta={m} t={t} fps={comp.fps} />)}
+            <select className="field h-[20px] text-2xs self-start" value="" aria-label="Add property" onChange={(e) => { const d = ANIM_PROPS.find((x) => x.key === e.target.value); if (d) upd({ [d.key]: p(d.def as never) }, 'Add Animator Property'); }}>
+              <option value="">Add ▸</option>{ANIM_PROPS.filter((x) => !a[x.key]).map((x) => <option key={x.key} value={x.key}>{x.label}</option>)}
+            </select>
+          </div>
+        );
+      })}
+    </div>
   );
 }

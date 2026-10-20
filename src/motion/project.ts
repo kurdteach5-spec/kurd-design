@@ -22,9 +22,9 @@ export async function projectToBlob(p: MotionProject): Promise<Blob> {
 
 export async function blobToProject(blob: Blob): Promise<MotionProject> {
   const files = readZip(await blob.arrayBuffer());
-  const json = files.get('project.json'); if (!json) throw new Error('This is not a KURD DESIGN Motion project.');
+  const json = files.get('project.json'); if (!json) throw new Error('This is not a SARWAR DESIGN Motion project.');
   const parsed = JSON.parse(new TextDecoder().decode(json)) as { format: string; project: MotionProject };
-  if (parsed.format !== FORMAT || !parsed.project?.comps) throw new Error('This is not a KURD DESIGN Motion project.');
+  if (parsed.format !== FORMAT || !parsed.project?.comps) throw new Error('This is not a SARWAR DESIGN Motion project.');
   const p = parsed.project;
   clearAssets(); clearRenderCache();
   for (const id of p.assetOrder) {

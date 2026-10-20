@@ -79,7 +79,7 @@ export function Monitors({ vertical }: { vertical: boolean }) {
   const cams = usePod((s) => s.cameras);
   const two = !vertical && cams.length > 4;
   return (
-    <div className={`h-full min-h-0 flex ${vertical ? 'flex-col' : 'flex-row'} gap-2 p-2 bg-[#141619]`}>
+    <div className={`h-full min-h-0 flex ${vertical ? 'flex-col' : 'flex-row'} gap-2 p-2 bg-[#0b0b14]`}>
       <div className="flex-1 min-h-0 min-w-0 flex items-center justify-center"><Program /></div>
       {cams.length > 0 && (
         <div className={vertical ? 'flex flex-row gap-2 shrink-0 overflow-x-auto no-scrollbar' : `grid ${two ? 'grid-cols-2 w-[min(40%,460px)]' : 'grid-cols-1 w-[min(30%,340px)]'} gap-2 shrink-0 content-center overflow-y-auto no-scrollbar`}>

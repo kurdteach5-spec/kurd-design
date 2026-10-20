@@ -111,7 +111,7 @@ function FeatureBar() {
   );
   const mvLayout = () => { const s = usePod.getState(); if (s.multiview.layout !== 'custom') usePod.setState({ multiview: { ...s.multiview, layout: 'custom', custom: s.multiview.custom ?? presetToCustom(s.multiview.layout, s) } }); usePod.setState({ videoOut: 'mv' }); useMvEdit.setState({ on: !mvEdit }); };
   return (
-    <div className="h-10 shrink-0 flex items-center gap-1.5 px-2 bg-[#191b1f] border-b border-line overflow-x-auto no-scrollbar" role="toolbar" aria-label="Mixer tools">
+    <div className="h-10 shrink-0 flex items-center gap-1.5 px-2 bg-[#0f0f19] border-b border-line overflow-x-auto no-scrollbar" role="toolbar" aria-label="Mixer tools">
       <B on={vout === 'mv' && !mvEdit} label="Multiview" tip="Preview, program and every input" onClick={() => { useMvEdit.setState({ on: false }); usePod.setState({ videoOut: 'mv' }); }}><LuLayoutGrid size={14} /></B>
       <B on={vout === 'pgm'} label="Program" tip="The program picture, large" onClick={() => usePod.setState({ videoOut: 'pgm' })}><LuMonitor size={14} /></B>
       <B on={mvEdit} label="Design the multiview" tip="Make your own multiview: choose, size and move every window" onClick={mvLayout}><LuPencilRuler size={14} /></B>
@@ -135,7 +135,7 @@ function FormatStudio() {
     go(); const ro = new ResizeObserver(go); ro.observe(el); return () => ro.disconnect();
   }, [out.width, out.height]);
   return (
-    <div className="flex-1 min-h-0 flex bg-[#101114]">
+    <div className="flex-1 min-h-0 flex bg-[#08080f]">
       <div ref={box} className="flex-1 min-w-0 flex items-center justify-center"><div style={{ width: w }}><BigWindow kind="pgm" /></div></div>
       <div className="w-[340px] shrink-0 border-s border-line bg-panel overflow-y-auto p-3 flex flex-col gap-2">
         <div className="flex items-center gap-2"><span className="text-sm font-semibold text-ink-strong flex-1">Reels & sizes</span><button type="button" className="btn btn-primary h-[26px] text-xs inline-flex items-center gap-1" onClick={() => usePod.setState({ videoOut: 'mv' })}><LuCheck size={13} />Done</button></div>
@@ -152,8 +152,8 @@ function SuperSourceStudio() {
   const id = activeSS();
   const pgm = usePod((s) => segmentAt(s.time, s.segments)?.cam ?? null);
   return (
-    <div className="flex-1 min-h-0 flex flex-col bg-[#101114]">
-      <div className="h-9 shrink-0 flex items-center gap-1.5 px-2 border-b border-line bg-[#191b1f] overflow-x-auto no-scrollbar">
+    <div className="flex-1 min-h-0 flex flex-col bg-[#08080f]">
+      <div className="h-9 shrink-0 flex items-center gap-1.5 px-2 border-b border-line bg-[#0f0f19] overflow-x-auto no-scrollbar">
         <span className="text-xs font-semibold text-ink-strong shrink-0 me-1">SuperSource</span>
         {splits.map((x) => (
           <button key={x.id} type="button" className={`h-[24px] px-2 rounded-[5px] text-xs shrink-0 ${x.id === id ? 'bg-accent text-white' : 'btn'}`} onClick={() => useSS.setState({ active: x.id })} translate="no">{shortName(x.id)}</button>
@@ -206,7 +206,7 @@ function RenderButton() {
   if (job !== null) {
     return (
       <div className="flex items-center gap-2 shrink-0" role="status">
-        <div className="w-[120px] h-1.5 rounded-full bg-[#1a1d21] overflow-hidden"><div className="h-full bg-accent" style={{ width: `${Math.round(job * 100)}%` }} /></div>
+        <div className="w-[120px] h-1.5 rounded-full bg-[#10101a] overflow-hidden"><div className="h-full bg-accent" style={{ width: `${Math.round(job * 100)}%` }} /></div>
         <span className="text-xs num text-ink">{`${Math.round(job * 100)}%`}</span>
         {stage && <span className="text-2xs text-muted max-w-[180px] truncate">{stage}</span>}
         <button type="button" className="btn h-[26px] text-xs inline-flex items-center gap-1" onClick={cancelRender}><LuCircleStop size={13} />Cancel</button>
@@ -242,7 +242,7 @@ export function MixerWorkspace() {
   const dragPanel = resizer('panelH', 90, () => Math.round(window.innerHeight * 0.7), -1);
   const dragTl = resizer('tlH', 90, () => Math.round(window.innerHeight * 0.5), -1);
   return (
-    <div className="h-full flex flex-col min-h-0 min-w-0 bg-[#141619]">
+    <div className="h-full flex flex-col min-h-0 min-w-0 bg-[#0b0b14]">
       <div className="flex-1 min-h-0 flex relative">
         {dock && <aside className="shrink-0 bg-panel border-e border-line overflow-y-auto overflow-x-hidden" style={{ width: side }} aria-label="Switcher palettes"><ErrorBoundary label="palettes"><Palettes /></ErrorBoundary></aside>}
         {dock && <Splitter dir="col" label="Resize the side panel" onDrag={dragSide} onReset={() => useMixerUI.setState({ side: 320 })} />}
@@ -279,7 +279,7 @@ export function MixerWorkspace() {
           <>
             <div className="absolute inset-0 z-30 bg-black/40" onClick={() => useMixerUI.setState({ drawer: false })} aria-hidden />
             <aside className="absolute top-0 bottom-0 start-0 z-40 bg-panel border-e border-line flex flex-col shadow-[0_16px_40px_rgba(0,0,0,.55)]" style={{ width: Math.min(360, w - 40) }} aria-label="Switcher palettes">
-              <div className="h-[30px] shrink-0 flex items-center px-3 border-b border-line-soft bg-[#202328]"><span className="flex-1 text-xs font-medium text-ink-strong">Inputs & SuperSource</span><button type="button" className="icon-btn" aria-label="Close panel" onClick={() => useMixerUI.setState({ drawer: false })}><LuX size={14} /></button></div>
+              <div className="h-[30px] shrink-0 flex items-center px-3 border-b border-line-soft bg-[#151522]"><span className="flex-1 text-xs font-medium text-ink-strong">Inputs & SuperSource</span><button type="button" className="icon-btn" aria-label="Close panel" onClick={() => useMixerUI.setState({ drawer: false })}><LuX size={14} /></button></div>
               <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden"><ErrorBoundary label="palettes"><Palettes /></ErrorBoundary></div>
             </aside>
           </>

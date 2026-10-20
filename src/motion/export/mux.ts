@@ -76,7 +76,7 @@ export function muxMP4(video: VideoTrackInfo, vSamples: MuxSample[], audio: Audi
     const name = new Uint8Array(32); b.push(name); b.u16(0x18); b.u16(0xffff);
   }, box('avcC', video.description ?? new Uint8Array()));
   const vTrak = box('trak', tkhd(1, video.width, video.height, false),
-    box('mdia', mdhd(VTS, Math.round(durSec * VTS)), hdlr('vide', 'KURD DESIGN Video'),
+    box('mdia', mdhd(VTS, Math.round(durSec * VTS)), hdlr('vide', 'SARWAR DESIGN Video'),
       box('minf', fullBox('vmhd', 0, 1, (b) => { b.u16(0); b.u16(0); b.u16(0); b.u16(0); }), dinf, stbl(avc1, vSamples, vOff, VTS, true))));
 
   let aTrak: Uint8Array | null = null;
@@ -97,7 +97,7 @@ export function muxMP4(video: VideoTrackInfo, vSamples: MuxSample[], audio: Audi
       entry = box('Opus', head, box('dOps', (b) => { b.u8(0); b.u8(audio.channels); b.u16(pre); b.u32(sr); b.u16(0); b.u8(0); }));
     }
     aTrak = box('trak', tkhd(2, 0, 0, true),
-      box('mdia', mdhd(sr, Math.round(durSec * sr)), hdlr('soun', 'KURD DESIGN Audio'),
+      box('mdia', mdhd(sr, Math.round(durSec * sr)), hdlr('soun', 'SARWAR DESIGN Audio'),
         box('minf', fullBox('smhd', 0, 0, (b) => { b.u16(0); b.u16(0); }), dinf, stbl(entry, aSamples, aOff, sr, false))));
   }
   const mvhd = fullBox('mvhd', 0, 0, (b) => {
@@ -138,7 +138,7 @@ function opusHead(a: AudioTrackInfo): Uint8Array {
 export function muxWebM(video: VideoTrackInfo, vSamples: MuxSample[], audio: AudioTrackInfo | null, aSamples: MuxSample[]): Blob {
   const ebml = el(0x1a45dfa3, uint(0x4286, 1), uint(0x42f7, 1), uint(0x42f2, 4), uint(0x42f3, 8), str(0x4282, 'webm'), uint(0x4287, 4), uint(0x4285, 2));
   const durMs = Math.max(...vSamples.map((s) => (s.ts + s.dur) / 1000), ...aSamples.map((s) => (s.ts + s.dur) / 1000), 1);
-  const info = el(0x1549a966, uint(0x2ad7b1, 1000000), str(0x4d80, 'KURD DESIGN'), str(0x5741, 'KURD DESIGN Motion'), flt(0x4489, durMs));
+  const info = el(0x1549a966, uint(0x2ad7b1, 1000000), str(0x4d80, 'SARWAR DESIGN'), str(0x5741, 'SARWAR DESIGN Motion'), flt(0x4489, durMs));
   const vTrack = el(0xae, uint(0xd7, 1), uint(0x73c5, 1), uint(0x83, 1), str(0x86, video.codec === 'vp8' ? 'V_VP8' : 'V_VP9'),
     el(0xe0, uint(0xb0, video.width), uint(0xba, video.height), ...(video.alpha ? [uint(0x53c0, 1)] : [])));
   const tracks = [vTrack];

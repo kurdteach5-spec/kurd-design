@@ -115,7 +115,7 @@ export function Select<T extends string>({ value, options, onChange, width, labe
 export function Checkbox({ checked, onChange, label, title }: { checked: boolean; onChange: (v: boolean) => void; label: ReactNode; title?: string }) {
   return (
     <label className="inline-flex items-center gap-1.5 cursor-pointer shrink-0" title={title}>
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="accent-[#4f8cff] w-3.5 h-3.5" />
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="accent-[#7c5cff] w-3.5 h-3.5" />
       <span>{label}</span>
     </label>
   );
@@ -126,7 +126,7 @@ export function Segmented<T extends string>({ value, options, onChange }: { valu
     <div className="inline-flex rounded-[5px] border border-line overflow-hidden shrink-0" role="radiogroup">
       {options.map((o) => (
         <button key={o.value} type="button" role="radio" aria-checked={value === o.value} aria-label={o.title} data-tip={o.title}
-          className={`h-[22px] min-w-[24px] px-1.5 inline-flex items-center justify-center ${value === o.value ? 'bg-accent-soft text-[#9cc0ff]' : 'text-muted hover:bg-hover hover:text-ink'}`}
+          className={`h-[22px] min-w-[24px] px-1.5 inline-flex items-center justify-center ${value === o.value ? 'bg-accent-soft text-[#c4b5fd]' : 'text-muted hover:bg-hover hover:text-ink'}`}
           onClick={() => onChange(o.value)}>{o.label}</button>
       ))}
     </div>
@@ -168,7 +168,7 @@ export function ColorButton({ color, onChange, label, size = 22, onCommit }: { c
   return (
     <>
       <button ref={ref} type="button" aria-label={label} data-tip={label}
-        className="rounded-[4px] border border-[#4a515c] shrink-0 checker overflow-hidden cursor-pointer"
+        className="rounded-[4px] border border-[#3a3a58] shrink-0 checker overflow-hidden cursor-pointer"
         style={{ width: size, height: size }} onClick={() => setOpen((o) => !o)}>
         <span className="block w-full h-full" style={{ background: color }} />
       </button>

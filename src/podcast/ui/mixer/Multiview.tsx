@@ -78,7 +78,7 @@ function InputWindow({ index, src, fill }: { index: number; src?: string; fill?:
   useRedraw(() => { const c = ref.current; if (!c) return; fitCanvas(c, 640); drawInputTo(c, id); decorate(c, id, false, usePod.getState().multiview.meters); }, [id]);
   const tally = mv.tally ? (pgm ? 'pgm' : pvw ? 'pvw' : null) : null;
   return (
-    <div className={`relative bg-black overflow-hidden group outline outline-2 -outline-offset-2 ${fill ? 'h-full' : ''} ${tally === 'pgm' ? 'outline-[#e02424]' : tally === 'pvw' ? 'outline-[#1fbf3a]' : suggested ? 'outline-[#f0b400]' : 'outline-[#2a2e34]'}`}
+    <div className={`relative bg-black overflow-hidden group outline outline-2 -outline-offset-2 ${fill ? 'h-full' : ''} ${tally === 'pgm' ? 'outline-[#e02424]' : tally === 'pvw' ? 'outline-[#1fbf3a]' : suggested ? 'outline-[#f0b400]' : 'outline-[#1d1d2e]'}`}
       onClick={() => setPreview(id)} onDoubleClick={() => programCut(id)} data-tip="Click: preview · double-click: program">
       <canvas ref={ref} className={fill ? 'block w-full h-full object-contain' : 'block w-full h-auto'} style={fill ? undefined : { aspectRatio: `${usePod.getState().output.width} / ${usePod.getState().output.height}` }} aria-label={name} />
       {mv.labels && <Label id={id} tally={tally} />}
@@ -196,12 +196,12 @@ function CustomMultiview() {
     <div ref={ref} className="grid bg-[#0b0c0e] p-[3px]" style={{ gap, gridTemplateColumns: `repeat(${c.cols}, minmax(0, 1fr))`, gridAutoRows: Math.max(20, unit * a), gridAutoFlow: 'row dense' }}>
       {c.cells.map((cell, i) => (
         <div key={i} className="relative min-w-0 min-h-0" style={{ gridColumn: `span ${Math.min(c.cols, cell.cs)}`, gridRow: `span ${cell.rs}` }}>
-          {cell.src === 'pgm' || cell.src === 'pvw' ? <BigWindow kind={cell.src} fill /> : cell.src ? <InputWindow index={i} src={cell.src} fill /> : <div className="h-full bg-[#15171a] outline outline-1 -outline-offset-1 outline-[#2a2e34]" />}
+          {cell.src === 'pgm' || cell.src === 'pvw' ? <BigWindow kind={cell.src} fill /> : cell.src ? <InputWindow index={i} src={cell.src} fill /> : <div className="h-full bg-[#15171a] outline outline-1 -outline-offset-1 outline-[#1d1d2e]" />}
           {edit && <CellEditor i={i} />}
         </div>
       ))}
       {edit && (
-        <button type="button" className="min-h-0 rounded-[3px] border border-dashed border-[#4a515c] text-muted hover:text-ink hover:border-accent text-xs" style={{ gridColumn: 'span 1' }}
+        <button type="button" className="min-h-0 rounded-[3px] border border-dashed border-[#3a3a58] text-muted hover:text-ink hover:border-accent text-xs" style={{ gridColumn: 'span 1' }}
           onClick={() => setCustom((x) => ({ ...x, cells: [...x.cells, { src: '', cs: 1, rs: 1 }] }))}>+ Window</button>
       )}
     </div>
@@ -252,7 +252,7 @@ export function FullInput({ id }: { id: string }) {
   const mv = usePod((s) => s.multiview);
   useRedraw(() => { const c = ref.current; if (!c) return; fitCanvas(c, 1280); drawInputTo(c, id); decorate(c, id, usePod.getState().multiview.safe, usePod.getState().multiview.meters); }, [id]);
   return (
-    <div className={`relative bg-black overflow-hidden outline outline-2 -outline-offset-2 ${pgm ? 'outline-[#e02424]' : 'outline-[#2a2e34]'}`}>
+    <div className={`relative bg-black overflow-hidden outline outline-2 -outline-offset-2 ${pgm ? 'outline-[#e02424]' : 'outline-[#1d1d2e]'}`}>
       <canvas ref={ref} className="block w-full h-auto" style={{ aspectRatio: `${usePod.getState().output.width} / ${usePod.getState().output.height}` }} aria-label={name} />
       {mv.labels && <Label id={id} tally={pgm ? 'pgm' : null} />}
     </div>

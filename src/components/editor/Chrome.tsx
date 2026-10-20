@@ -24,7 +24,7 @@ export function DocumentTabs() {
         const z = Math.round((d.view.zoom || 1) * 100);
         return (
           <div key={id} role="tab" aria-selected={on} tabIndex={0}
-            className={`group flex items-center gap-2 h-[28px] ps-3 pe-1.5 rounded-t-[5px] cursor-default shrink-0 max-w-[260px] ${on ? 'bg-surround text-ink-strong' : 'bg-[#22262b] text-muted hover:text-ink'}`}
+            className={`group flex items-center gap-2 h-[28px] ps-3 pe-1.5 rounded-t-[5px] cursor-default shrink-0 max-w-[260px] ${on ? 'bg-surround text-ink-strong' : 'bg-[#171726] text-muted hover:text-ink'}`}
             onClick={() => { setActiveDocument(id); useUI.setState({ showHome: false }); }}
             onKeyDown={(e) => { if (e.key === 'Enter') { setActiveDocument(id); useUI.setState({ showHome: false }); } }}
             onAuxClick={(e) => { if (e.button === 1) requestClose(id); }}>
@@ -63,7 +63,7 @@ export function StatusBar() {
       <span data-tip="Canvas size" dir="ltr">{`${st.width} × ${st.height} px · ${st.dpi} ppi`}</span>
       <span className="w-[120px]" data-tip="Cursor position">{cursor.x !== null ? `X ${cursor.x}  Y ${cursor.y}` : 'X –  Y –'}</span>
       <span className="hidden md:inline">{`${layers} ${layers === 1 ? 'layer' : 'layers'} · ${formatBytes(mem)}`}</span>
-      {st.selection && <span className="hidden lg:inline text-[#9cc0ff]">{`Selection ${Math.round(st.selection.bounds.w)} × ${Math.round(st.selection.bounds.h)}`}</span>}
+      {st.selection && <span className="hidden lg:inline text-[#c4b5fd]">{`Selection ${Math.round(st.selection.bounds.w)} × ${Math.round(st.selection.bounds.h)}`}</span>}
       {doc.view.rotation !== 0 && (
         <button type="button" className="inline-flex items-center gap-1 text-amber hover:text-ink" onClick={() => getEngine()?.rotateView(0, true)} aria-label="Reset view rotation">
           <LuRotateCcw size={12} />{Math.round(doc.view.rotation)}°
@@ -83,7 +83,7 @@ export function Toasts() {
     <>
       <div className="fixed bottom-9 left-1/2 -translate-x-1/2 z-[950] flex flex-col items-center gap-1.5 pointer-events-none" role="status" aria-live="polite">
         {toasts.map((t) => (
-          <div key={t.id} className="flex items-center gap-2 bg-[#2a2f36] border border-[#434a54] rounded-[6px] px-3 py-2 shadow-[0_10px_30px_rgba(0,0,0,.45)] text-ink-strong max-w-[520px]" style={{ animation: 'menu-in 120ms ease-out' }}>
+          <div key={t.id} className="flex items-center gap-2 bg-[#1d1d2f] border border-[#33334e] rounded-[6px] px-3 py-2 shadow-[0_10px_30px_rgba(0,0,0,.45)] text-ink-strong max-w-[520px]" style={{ animation: 'menu-in 120ms ease-out' }}>
             {icon[t.kind]}<span>{t.message}</span>
           </div>
         ))}
@@ -92,7 +92,7 @@ export function Toasts() {
         <div className="fixed inset-0 z-[940] flex items-center justify-center bg-black/25" role="progressbar" aria-label={busy.label} aria-valuenow={busy.progress !== null ? Math.round(busy.progress * 100) : undefined}>
           <div className="bg-panel border border-line rounded-[8px] px-5 py-4 w-[300px] shadow-[0_16px_40px_rgba(0,0,0,.5)]">
             <div className="text-ink-strong mb-2.5">{busy.label}</div>
-            <div className="h-1.5 rounded-full bg-[#1d2025] overflow-hidden">
+            <div className="h-1.5 rounded-full bg-[#12121e] overflow-hidden">
               {busy.progress !== null
                 ? <div className="h-full bg-accent transition-[width] duration-150" style={{ width: `${Math.round(busy.progress * 100)}%` }} />
                 : <div className="h-full w-1/3 bg-accent rounded-full" style={{ animation: 'busy 1.1s ease-in-out infinite' }} />}
@@ -131,7 +131,7 @@ export function SmartContentsBar() {
   if (!doc?.smartLink) return null;
   const dirty = isDirty(doc);
   return (
-    <div className="h-[30px] shrink-0 flex items-center gap-2 px-3 bg-[#23324a] border-b border-[#35507a] text-ink" role="status">
+    <div className="h-[30px] shrink-0 flex items-center gap-2 px-3 bg-[#23324a] border-b border-[#453a88] text-ink" role="status">
       <LuBox size={14} className="text-accent shrink-0" />
       <span className="truncate min-w-0">{parentName ? `Editing smart object contents. Save (Ctrl/Cmd+S) to update it in “${parentName}”.` : 'The original document of this smart object is closed.'}</span>
       <div className="flex-1" />

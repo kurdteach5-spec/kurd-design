@@ -14,7 +14,9 @@ import { ParagraphFields } from './PropertiesPanel';
 import type { AdjustmentKind, TextLayer } from '../../types/document';
 import {
   LuSun, LuChartLine, LuChartColumn, LuAperture, LuPalette, LuSparkle, LuScale, LuContrast, LuBlend, LuDroplets, LuEclipse, LuSquareStack, LuLayers2, LuSlidersHorizontal, LuPlus, LuTrash2, LuHistory,
+  LuBrush,
 } from 'react-icons/lu';
+import { historySourceIndex, useHistorySource } from '../../tools/psTools';
 
 export function ColorPanel() {
   const fg = useTools((s) => s.foreground), bg = useTools((s) => s.background), history = useTools((s) => s.colorHistory);
@@ -24,8 +26,8 @@ export function ColorPanel() {
   return (
     <div className="p-3 flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <button type="button" className="w-7 h-7 rounded-[4px] border-2" style={{ background: fg, borderColor: target.current === 'fg' ? '#4f8cff' : '#4a515c' }} aria-label="Edit foreground color" onClick={() => setWhich('fg')} />
-        <button type="button" className="w-7 h-7 rounded-[4px] border-2" style={{ background: bg, borderColor: target.current === 'bg' ? '#4f8cff' : '#4a515c' }} aria-label="Edit background color" onClick={() => setWhich('bg')} />
+        <button type="button" className="w-7 h-7 rounded-[4px] border-2" style={{ background: fg, borderColor: target.current === 'fg' ? '#7c5cff' : '#3a3a58' }} aria-label="Edit foreground color" onClick={() => setWhich('fg')} />
+        <button type="button" className="w-7 h-7 rounded-[4px] border-2" style={{ background: bg, borderColor: target.current === 'bg' ? '#7c5cff' : '#3a3a58' }} aria-label="Edit background color" onClick={() => setWhich('bg')} />
         <span className="text-muted">Editing {target.current === 'fg' ? 'foreground' : 'background'}</span>
       </div>
       <ColorPicker color={target.current === 'fg' ? fg : bg} onChange={(c) => {
@@ -36,7 +38,7 @@ export function ColorPanel() {
         <div>
           <div className="text-muted mb-1.5">Recent colors</div>
           <div className="flex flex-wrap gap-1">
-            {history.map((c) => <button type="button" key={c} className="w-5 h-5 rounded-[3px] border border-[#4a515c]" style={{ background: c }} aria-label={c} data-tip={c.toUpperCase()} onClick={() => setForeground(c)} onContextMenu={(e) => { e.preventDefault(); setBackground(c); }} />)}
+            {history.map((c) => <button type="button" key={c} className="w-5 h-5 rounded-[3px] border border-[#3a3a58]" style={{ background: c }} aria-label={c} data-tip={c.toUpperCase()} onClick={() => setForeground(c)} onContextMenu={(e) => { e.preventDefault(); setBackground(c); }} />)}
           </div>
         </div>
       )}
@@ -50,7 +52,7 @@ export function SwatchesPanel() {
     <div className="p-3 flex flex-col gap-2">
       <div className="grid grid-cols-[repeat(auto-fill,minmax(22px,1fr))] gap-1">
         {swatches.map((c, i) => (
-          <button type="button" key={`${c}${i}`} className="aspect-square rounded-[3px] border border-[#4a515c] hover:scale-110 transition-transform" style={{ background: c }}
+          <button type="button" key={`${c}${i}`} className="aspect-square rounded-[3px] border border-[#3a3a58] hover:scale-110 transition-transform" style={{ background: c }}
             aria-label={`Swatch ${c}`} data-tip={`${c.toUpperCase()} · right-click for background, Alt-click to remove`}
             onClick={(e) => { if (e.altKey) useTools.setState((s) => ({ swatches: s.swatches.filter((_, j) => j !== i) })); else setForeground(c); }}
             onContextMenu={(e) => { e.preventDefault(); setBackground(c); }} />
@@ -65,6 +67,7 @@ export function SwatchesPanel() {
 
 export function HistoryPanel() {
   const doc = useDocuments(selectActiveDoc);
+  useHistorySource();
   const list = useRef<HTMLDivElement>(null);
   useEffect(() => { list.current?.querySelector('[aria-current="true"]')?.scrollIntoView({ block: 'nearest' }); }, [doc?.historyIndex, doc?.history.length]);
   if (!doc) return <div className="p-4 text-muted">No document open.</div>;
@@ -74,8 +77,11 @@ export function HistoryPanel() {
       <div ref={list} className="flex-1 min-h-0 overflow-y-auto py-1" role="listbox" aria-label="History">
         {doc.history.map((h, i) => (
           <div key={h.id} role="option" aria-selected={i === doc.historyIndex} aria-current={i === doc.historyIndex}
-            className={`flex items-center gap-2 h-7 px-3 cursor-default ${i === doc.historyIndex ? 'bg-[#2f4670] text-ink-strong' : i > doc.historyIndex ? 'text-faint hover:bg-hover' : 'hover:bg-hover'}`}
+            className={`flex items-center gap-2 h-7 px-3 cursor-default ${i === doc.historyIndex ? 'bg-[#3a2f73] text-ink-strong' : i > doc.historyIndex ? 'text-faint hover:bg-hover' : 'hover:bg-hover'}`}
             onClick={() => jumpToHistory(i)}>
+            <button type="button" className={`w-5 h-5 shrink-0 rounded-[3px] flex items-center justify-center ${historySourceIndex(doc.id) === i ? 'text-[#c4b5fd] bg-accent-soft' : 'text-transparent hover:text-faint'}`}
+              aria-label="Set the source for the History Brush" aria-pressed={historySourceIndex(doc.id) === i} data-tip="Source for the History Brush"
+              onClick={(e) => { e.stopPropagation(); useHistorySource.setState((s) => ({ byDoc: { ...s.byDoc, [doc.id]: h.id } })); }}><LuBrush size={12} /></button>
             <LuHistory size={12} className="text-muted shrink-0" />
             <span className="truncate flex-1">{h.label}</span>
             {h.id === doc.savedEntryId && <span className="text-2xs text-ok">saved</span>}
@@ -131,7 +137,7 @@ function BrushPreview({ size, hardness }: { size: number; hardness: number }) {
       x.drawImage(tc, px - stamp.width / 2, py - stamp.height / 2);
     }
   }, [size, hardness]);
-  return <canvas ref={ref} width={240} height={70} className="w-full h-[70px] bg-[#1d2025] rounded-[4px] border border-line" aria-hidden />;
+  return <canvas ref={ref} width={240} height={70} className="w-full h-[70px] bg-[#12121e] rounded-[4px] border border-line" aria-hidden />;
 }
 
 export function BrushPanel() {

@@ -17,6 +17,7 @@ export function MotionDialogs() {
   if (d.type === 'shortcuts') return <Shortcuts />;
   if (d.type === 'save-preset') return <SavePreset />;
   if (d.type === 'rename') return <Rename id={d.id} />;
+  if (d.type === 'import-report') return <ImportReport name={d.name} summary={d.summary} missing={d.missing} skipped={d.skipped} />;
   return null;
 }
 
@@ -100,4 +101,27 @@ function Rename({ id }: { id: string }) {
   const [name, setName] = useState(p.comps[id]?.name ?? p.assets[id]?.name ?? '');
   const submit = () => { A.renameProjectItem(id, name); closeMotionDialog(); };
   return <Dialog title="Rename" onClose={closeMotionDialog} onSubmit={submit} width={340}><input className="field w-full" value={name} onChange={(e) => setName(e.target.value)} data-autofocus aria-label="Name" /></Dialog>;
+}
+
+function ImportReport({ name, summary, missing, skipped }: { name: string; summary: string; missing: string[]; skipped: string[] }) {
+  return (
+    <Dialog title={`Opened ${name}`} onClose={closeMotionDialog} onSubmit={closeMotionDialog} width={460} footer={<button type="button" className="btn btn-primary" onClick={closeMotionDialog}>OK</button>}>
+      <div className="flex flex-col gap-3 text-xs">
+        <div className="text-ink">{summary}</div>
+        {missing.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <div className="text-amber font-semibold">Footage not found ({missing.length})</div>
+            <div className="text-muted">Open these files together with the project (select them all in the same window) and they are linked automatically. Until then a grey solid stands in for each.</div>
+            <ul className="m-0 ps-4 text-ink max-h-[120px] overflow-y-auto" translate="no">{missing.map((m) => <li key={m}>{m}</li>)}</ul>
+          </div>
+        )}
+        {skipped.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <div className="text-muted font-semibold">Not brought in</div>
+            <ul className="m-0 ps-4 text-muted max-h-[140px] overflow-y-auto">{skipped.map((m) => <li key={m}>{m}</li>)}</ul>
+          </div>
+        )}
+      </div>
+    </Dialog>
+  );
 }

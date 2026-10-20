@@ -48,7 +48,7 @@ function CurvesEditor({ points, ch, onChange }: { points: CurvePoints; ch: Ch; o
   return (
     <div className="relative">
       <div className="absolute inset-0 pointer-events-none"><Histogram ch={ch} height={200} /></div>
-      <svg ref={ref} viewBox="-2 -2 259 259" className="w-full aspect-square bg-[#1d2025] rounded-[4px] border border-line touch-none" role="img" aria-label="Curve"
+      <svg ref={ref} viewBox="-2 -2 259 259" className="w-full aspect-square bg-[#12121e] rounded-[4px] border border-line touch-none" role="img" aria-label="Curve"
         onPointerDown={(e) => {
           const p = toPt(e);
           let i = points.findIndex((q) => Math.abs(q.x - p.x) < 8 && Math.abs(q.y - p.y) < 12);
@@ -67,10 +67,10 @@ function CurvesEditor({ points, ch, onChange }: { points: CurvePoints; ch: Ch; o
         }}
         onPointerUp={() => setDrag(null)}
         onDoubleClick={() => onChange([{ x: 0, y: 0 }, { x: 255, y: 255 }])}>
-        {[64, 128, 192].map((v) => <g key={v} stroke="#3a4049" strokeWidth={0.6}><line x1={v} y1={0} x2={v} y2={255} /><line x1={0} y1={v} x2={255} y2={v} /></g>)}
-        <line x1={0} y1={255} x2={255} y2={0} stroke="#4a515c" strokeWidth={0.6} strokeDasharray="3 3" />
+        {[64, 128, 192].map((v) => <g key={v} stroke="#2c2c45" strokeWidth={0.6}><line x1={v} y1={0} x2={v} y2={255} /><line x1={0} y1={v} x2={255} y2={v} /></g>)}
+        <line x1={0} y1={255} x2={255} y2={0} stroke="#3a3a58" strokeWidth={0.6} strokeDasharray="3 3" />
         <path d={path} fill="none" stroke={CH_COLOR[ch]} strokeWidth={1.6} />
-        {points.map((p, i) => <rect key={i} x={p.x - 3.5} y={255 - p.y - 3.5} width={7} height={7} fill={drag === i ? CH_COLOR[ch] : '#1d2025'} stroke={CH_COLOR[ch]} strokeWidth={1.2} />)}
+        {points.map((p, i) => <rect key={i} x={p.x - 3.5} y={255 - p.y - 3.5} width={7} height={7} fill={drag === i ? CH_COLOR[ch] : '#12121e'} stroke={CH_COLOR[ch]} strokeWidth={1.2} />)}
       </svg>
       <div className="text-faint mt-1">Click to add points · drag a point off the graph to remove · double-click to reset</div>
     </div>
@@ -80,7 +80,7 @@ function CurvesEditor({ points, ch, onChange }: { points: CurvePoints; ch: Ch; o
 function LevelsEditor({ ch, value, onChange }: { ch: Ch; value: LevelsChannel; onChange: (v: LevelsChannel) => void }) {
   return (
     <div className="flex flex-col gap-2">
-      <div className="bg-[#1d2025] rounded-[4px] border border-line p-1"><Histogram ch={ch} height={70} /></div>
+      <div className="bg-[#12121e] rounded-[4px] border border-line p-1"><Histogram ch={ch} height={70} /></div>
       <Slider label="Input black" value={value.inBlack} min={0} max={253} onChange={(v) => onChange({ ...value, inBlack: Math.min(v, value.inWhite - 2) })} />
       <Slider label="Midtones (gamma)" value={value.gamma} min={0.1} max={9.99} step={0.01} precision={2} onChange={(v) => onChange({ ...value, gamma: v })} />
       <Slider label="Input white" value={value.inWhite} min={2} max={255} onChange={(v) => onChange({ ...value, inWhite: Math.max(v, value.inBlack + 2) })} />

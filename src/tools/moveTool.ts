@@ -209,7 +209,7 @@ export const moveTool: Tool = {
     }
     if (floatMove) return;
     const s = free ?? currentSession(engine);
-    if (s) drawTransformBox(ctx, engine, s, free ? '#ffb547' : '#4f8cff');
+    if (s) drawTransformBox(ctx, engine, s, free ? '#ffb547' : '#7c5cff');
   },
 };
 

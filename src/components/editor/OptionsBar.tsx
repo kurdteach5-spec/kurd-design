@@ -9,7 +9,8 @@ import { TOOL_ICONS } from './toolIcons';
 import { Checkbox, ColorButton, IconButton, NumberField, Segmented, Select } from '../ui/controls';
 import { FONTS } from '../../utils/fonts';
 import { alignLayers, distributeLayers } from '../../editor/layerActions';
-import { useDocuments, selectActiveState } from '../../state/documentStore';
+import { useDocuments, selectActiveState, selectActiveDoc } from '../../state/documentStore';
+import { useRuler, rulerInfo } from '../../tools/psTools';
 import { findLayer } from '../../layers/tree';
 import type { TextStyle } from '../../types/document';
 import {
@@ -269,6 +270,44 @@ function ToolOptions() {
           <NumberField label="Exposure" value={pct(o.tone.exposure)} min={1} max={100} unit="%" onChange={(v) => setOptions('tone', { exposure: v / 100 })} />
         </>
       );
+    case 'quick-select':
+      return (
+        <>
+          <NumberField label="Size" value={o.quick.size} min={2} max={1000} unit="px" onChange={(v) => setOptions('quick', { size: v })} />
+          <Checkbox label="Sample all layers" checked={o.wand.sampleAll} onChange={(v) => setOptions('wand', { sampleAll: v })} />
+          <Hint>Paint over what you want · Alt paints to remove · [ ] change the size</Hint>
+        </>
+      );
+    case 'marquee-row': case 'marquee-col':
+      return <Hint>Click to select a 1-pixel {tool === 'marquee-row' ? 'row' : 'column'} · Shift adds · Alt subtracts</Hint>;
+    case 'spot-heal':
+      return (
+        <>
+          <NumberField label="Size" value={o.heal.size} min={1} max={1000} unit="px" onChange={(v) => setOptions('heal', { size: v })} />
+          <Hint>Paint over a spot, blemish or small object: it is filled from its surroundings (content-aware)</Hint>
+        </>
+      );
+    case 'history-brush':
+      return (
+        <>
+          <NumberField label="Size" value={o.historyBrush.size} min={1} max={1000} unit="px" onChange={(v) => setOptions('historyBrush', { size: v })} />
+          <NumberField label="Hardness" value={pct(o.historyBrush.hardness)} min={0} max={100} unit="%" onChange={(v) => setOptions('historyBrush', { hardness: v / 100 })} />
+          <NumberField label="Opacity" value={pct(o.historyBrush.opacity)} min={1} max={100} unit="%" onChange={(v) => setOptions('historyBrush', { opacity: v / 100 })} />
+          <Hint>Paints back the layer as it was in the chosen History state (click the brush box in the History panel)</Hint>
+        </>
+      );
+    case 'sponge':
+      return (
+        <>
+          <NumberField label="Size" value={o.sponge.size} min={1} max={1000} unit="px" onChange={(v) => setOptions('sponge', { size: v })} />
+          <Select label="Mode" value={o.sponge.mode} onChange={(v) => setOptions('sponge', { mode: v })} options={[{ value: 'desaturate', label: 'Desaturate' }, { value: 'saturate', label: 'Saturate' }]} />
+          <NumberField label="Flow" value={pct(o.sponge.flow)} min={1} max={100} unit="%" onChange={(v) => setOptions('sponge', { flow: v / 100 })} />
+        </>
+      );
+    case 'rotate-view':
+      return <RotateViewFields />;
+    case 'ruler':
+      return <RulerFields />;
     case 'paint-bucket':
       return (
         <>
@@ -342,4 +381,28 @@ export function OptionsBar() {
       )}
     </div>
   );
+}
+
+function RotateViewFields() {
+  const engine = getEngine();
+  const doc = useDocuments(selectActiveDoc);
+  const r = Math.round(doc?.view.rotation ?? 0);
+  return (
+    <>
+      <NumberField label="Rotation" value={r} min={-360} max={360} unit="°" onChange={(v) => engine?.setView({ rotation: ((v % 360) + 360) % 360 })} />
+      <button type="button" className="btn h-[24px] text-xs" onClick={() => engine?.setView({ rotation: 0 })}>Reset View</button>
+      <Hint>Drag to turn the canvas · Shift snaps to 15° · double-click resets</Hint>
+    </>
+  );
+}
+function RulerFields() {
+  useRuler();
+  const i = rulerInfo();
+  const f = (n: number) => (Math.round(n * 10) / 10).toString();
+  return i ? (
+    <span className="flex items-center gap-3 text-xs num whitespace-nowrap" translate="no">
+      <span>X: {f(i.x)}</span><span>Y: {f(i.y)}</span><span>W: {f(i.w)}</span><span>H: {f(i.h)}</span><span>A: {f(i.angle)}°</span><span>L1: {f(i.length)}</span>
+      <button type="button" className="btn h-[24px] text-xs" onClick={() => useRuler.setState({ a: null, b: null })}>Clear</button>
+    </span>
+  ) : <Hint>Drag to measure distance and angle · Shift snaps to 45°</Hint>;
 }

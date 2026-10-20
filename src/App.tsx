@@ -10,7 +10,8 @@ import { DialogHost } from './components/dialogs/DialogHost';
 import { Logo } from './components/dialogs/EditDialogs';
 import { TooltipHost } from './components/ui/controls';
 import { LanguageMenu } from './components/ui/LanguageMenu';
-import { useWorkspace, setWorkspace, isMotion, isPodcast, isDesign, isMixer } from './state/workspace';
+import { useWorkspace, isMotion, isPodcast, isDesign, isMixer, openLauncher } from './state/workspace';
+import { Launcher } from './components/launcher/Launcher';
 import { PodcastWorkspace } from './podcast/ui/PodcastWorkspace';
 import { MixerWorkspace } from './podcast/ui/mixer/MixerWorkspace';
 import { ShortcutsDialog } from './podcast/ui/ShortcutsDialog';
@@ -21,7 +22,7 @@ import { MotionWorkspace } from './motion/ui/MotionWorkspace';
 import { MotionMenuBar } from './motion/ui/MotionMenuBar';
 import { importFiles as importMotionFiles } from './motion/actions';
 import { pause as pauseMotion } from './motion/media/playback';
-import { LuImage, LuClapperboard, LuPodcast, LuSlidersVertical } from 'react-icons/lu';
+import { LuImage, LuClapperboard, LuPodcast, LuSlidersVertical, LuLayoutGrid } from 'react-icons/lu';
 import { useUI } from './state/uiStore';
 import { useDocuments } from './state/documentStore';
 import { installKeyboard } from './shortcuts/keyboard';
@@ -30,11 +31,19 @@ import { startAutosave, checkRecovery, importAsLayers, openFiles } from './edito
 import { initFonts } from './utils/fonts';
 import { isEditable } from './shortcuts/keyboard';
 
+const WORKSPACES = [
+  { id: 'design', label: 'Design', short: 'Design', color: '#f2b233', Icon: LuImage, tip: 'Photo editing & graphic design' },
+  { id: 'motion', label: 'Motion', short: 'Motion', color: '#2fae9c', Icon: LuClapperboard, tip: 'Motion graphics, animation & video' },
+  { id: 'podcast', label: 'Podcast', short: 'Podcast', color: '#e2674f', Icon: LuPodcast, tip: 'Multicam podcast & interview editing' },
+  { id: 'mixer', label: 'Vision Mixer', short: 'Mixer', color: '#7d9aff', Icon: LuSlidersVertical, tip: 'Live vision mixer (switcher) for the podcast cameras' },
+] as const;
+
 export function App() {
   const showHome = useUI((s) => s.showHome);
   const hasDocs = useDocuments((s) => s.order.length > 0);
   const home = showHome || !hasDocs;
   const mode = useWorkspace((s) => s.mode);
+  const launcher = useWorkspace((s) => s.launcher);
 
   useEffect(() => {
     initFonts();
@@ -63,18 +72,33 @@ export function App() {
     return () => { offKeys(); window.removeEventListener('paste', paste); window.removeEventListener('dragover', over); window.removeEventListener('drop', drop); window.removeEventListener('dragleave', leave); window.removeEventListener('resize', onResize); window.removeEventListener('contextmenu', ctx); };
   }, []);
 
+  if (launcher) {
+    return (
+      <div className="h-full">
+        <Launcher />
+        <DialogHost />
+        <Toasts />
+        <TooltipHost />
+      </div>
+    );
+  }
   return (
-    <div className="h-full grid" style={{ gridTemplateRows: '32px 36px minmax(0, 1fr) 24px', gridTemplateColumns: 'minmax(0, 1fr)' }}>
+    <div className="h-full grid" style={{ gridTemplateRows: '34px 36px minmax(0, 1fr) 24px', gridTemplateColumns: 'minmax(0, 1fr)' }}>
       <header className="flex items-center gap-1 sm:gap-2 px-1.5 sm:px-2 bg-panel border-b border-line min-w-0 overflow-hidden">
-        <button type="button" className="flex items-center gap-2 pe-1 xl:pe-2 shrink-0" onClick={() => useUI.setState({ showHome: true })} aria-label="KURD DESIGN home" data-tip="Home">
-          <Logo size={20} /><span className="font-bold text-ink-strong hidden xl:inline tracking-[0.06em] whitespace-nowrap">KURD <span className="text-accent">DESIGN</span></span>
+        <button type="button" className="flex items-center gap-2 pe-1 xl:pe-2 shrink-0" onClick={() => { pauseMotion(); stopPodcast(); openLauncher(); }} aria-label="SARWAR DESIGN start screen" data-tip="Start screen: all sections">
+          <Logo size={20} /><span className="font-bold text-ink-strong hidden xl:inline tracking-[0.06em] whitespace-nowrap">SARWAR <span className="text-accent">DESIGN</span></span>
         </button>
-        <div className="flex items-center rounded-[6px] border border-line overflow-hidden shrink-0 mx-1" role="radiogroup" aria-label="Workspace">
-          <button type="button" role="radio" aria-checked={mode === 'design'} aria-label="Design" className={`h-[24px] px-2 sm:px-2.5 text-xs inline-flex items-center gap-1.5 ${mode === 'design' ? 'bg-accent text-white' : 'text-muted hover:text-ink hover:bg-hover'}`} onClick={() => { pauseMotion(); stopPodcast(); setWorkspace('design'); }} data-tip="Photo editing & graphic design"><LuImage size={13} /><span className="hidden sm:inline">Design</span></button>
-          <button type="button" role="radio" aria-checked={mode === 'motion'} aria-label="Motion" className={`h-[24px] px-2 sm:px-2.5 text-xs inline-flex items-center gap-1.5 ${mode === 'motion' ? 'bg-accent text-white' : 'text-muted hover:text-ink hover:bg-hover'}`} onClick={() => { stopPodcast(); setWorkspace('motion'); }} data-tip="Motion graphics, animation & video"><LuClapperboard size={13} /><span className="hidden sm:inline">Motion</span></button>
-          <button type="button" role="radio" aria-checked={mode === 'podcast'} aria-label="Podcast" className={`h-[24px] px-2 sm:px-2.5 text-xs inline-flex items-center gap-1.5 ${mode === 'podcast' ? 'bg-accent text-white' : 'text-muted hover:text-ink hover:bg-hover'}`} onClick={() => { pauseMotion(); stopPodcast(); setWorkspace('podcast'); }} data-tip="Multicam podcast & interview editing"><LuPodcast size={13} /><span className="hidden sm:inline">Podcast</span></button>
-          <button type="button" role="radio" aria-checked={mode === 'mixer'} aria-label="Vision Mixer" className={`h-[24px] px-2 sm:px-2.5 text-xs inline-flex items-center gap-1.5 ${mode === 'mixer' ? 'bg-accent text-white' : 'text-muted hover:text-ink hover:bg-hover'}`} onClick={() => { pauseMotion(); stopPodcast(); setWorkspace('mixer'); }} data-tip="Live vision mixer (switcher) for the podcast cameras"><LuSlidersVertical size={13} /><span className="hidden sm:inline">Mixer</span></button>
-        </div>
+        {(() => { const w = WORKSPACES.find((x) => x.id === mode)!; return (
+          <>
+            <button type="button" className="h-[24px] px-2.5 rounded-full text-xs inline-flex items-center gap-1.5 shrink-0 border border-line text-muted hover:text-ink hover:bg-hover"
+              onClick={() => { pauseMotion(); stopPodcast(); openLauncher(); }} data-tip="Back to the start page to open another section" aria-label="All sections">
+              <LuLayoutGrid size={13} /><span className="hidden sm:inline">All sections</span>
+            </button>
+            <span className="h-[24px] px-2.5 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 shrink-0 mx-1" style={{ background: `${w.color}22`, color: w.color, boxShadow: `inset 0 0 0 1px ${w.color}55` }} aria-label={`Section: ${w.label}`}>
+              <w.Icon size={13} /><span>{w.label}</span>
+            </span>
+          </>
+        ); })()}
         <div className="h-full py-[3px] min-w-0 flex-1 overflow-x-auto overflow-y-hidden no-scrollbar">{mode === 'motion' ? <MotionMenuBar /> : mode === 'podcast' ? <div className="h-full hidden md:flex items-center px-2 text-xs text-muted whitespace-nowrap">Multicam podcast editor · automatic cuts</div> : mode === 'mixer' ? <div className="h-full hidden md:flex items-center px-2 text-xs text-muted whitespace-nowrap">Vision mixer · live switching, keys, SuperSource, multiview</div> : <MenuBar />}</div>
         <div className="h-full shrink-0"><LanguageMenu /></div>
       </header>

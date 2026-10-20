@@ -83,7 +83,7 @@ function writeHtml() {
     // body-only variant for hosts that supply their own document skeleton
     const fav = (html.match(/<link rel="icon"[^>]*>/) || [''])[0];
     const fontLink = (html.match(/<link rel="stylesheet" href="https:\/\/fonts[^>]*>/) || [''])[0];
-    fs.writeFileSync(path.join(dist, 'kurd-design-embed.html'), `<title>KURD DESIGN</title>\n${fav}\n${fontLink}\n<style>${css}</style>\n<div id="root"></div>\n<script type="module">${js}</script>\n`);
+    fs.writeFileSync(path.join(dist, 'kurd-design-embed.html'), `<title>SARWAR DESIGN</title>\n${fav}\n${fontLink}\n<style>${css}</style>\n<div id="root"></div>\n<script type="module">${js}</script>\n`);
   }
 }
 
@@ -105,7 +105,7 @@ if (serve) {
       res.writeHead(200, { 'Content-Type': types[path.extname(p)] || 'application/octet-stream' });
       res.end(data);
     });
-  }).listen(5173, () => console.log('KURD DESIGN dev server: http://localhost:5173'));
+  }).listen(5173, () => console.log('SARWAR DESIGN dev server: http://localhost:5173'));
 } else {
   await esbuild.build(options);
   writeHtml();

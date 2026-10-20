@@ -134,14 +134,14 @@ export const textTool: Tool = {
   drawOverlay(ctx, engine) {
     if (dragStart && dragEnd) {
       const a = engine.docToScreen(dragStart), b = engine.docToScreen(dragEnd);
-      ctx.save(); ctx.strokeStyle = '#4f8cff'; ctx.setLineDash([4, 3]); ctx.strokeRect(a.x + 0.5, a.y + 0.5, b.x - a.x, b.y - a.y); ctx.restore();
+      ctx.save(); ctx.strokeStyle = '#7c5cff'; ctx.setLineDash([4, 3]); ctx.strokeRect(a.x + 0.5, a.y + 0.5, b.x - a.x, b.y - a.y); ctx.restore();
     }
     const l = editingLayer();
     if (l) {
       const b = textLocalBounds(l);
       const pts = [{ x: b.x - 2, y: b.y - 2 }, { x: b.x + Math.max(b.w, 4) + 2, y: b.y - 2 }, { x: b.x + Math.max(b.w, 4) + 2, y: b.y + b.h + 2 }, { x: b.x - 2, y: b.y + b.h + 2 }]
         .map((p) => engine.docToScreen({ x: l.transform.a * p.x + l.transform.c * p.y + l.transform.e, y: l.transform.b * p.x + l.transform.d * p.y + l.transform.f }));
-      ctx.save(); ctx.strokeStyle = '#4f8cff'; ctx.setLineDash([3, 3]); ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y))); ctx.closePath(); ctx.stroke(); ctx.restore();
+      ctx.save(); ctx.strokeStyle = '#7c5cff'; ctx.setLineDash([3, 3]); ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y))); ctx.closePath(); ctx.stroke(); ctx.restore();
     }
   },
 };

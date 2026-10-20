@@ -79,7 +79,7 @@ export function RenderPanel() {
       {(s.format === 'mp4' || s.format === 'webm') && !hasWebCodecs() && <div className="text-amber">This browser can’t encode video. Use Chrome or Edge, or choose GIF / image sequence.</div>}
       {job ? (
         <div className="flex flex-col gap-1.5" role="progressbar" aria-valuenow={Math.round(job.p * 100)} aria-label="Render progress">
-          <div className="h-2 rounded-full bg-[#1d2025] overflow-hidden"><div className="h-full bg-accent transition-[width]" style={{ width: `${Math.max(2, job.p * 100)}%` }} /></div>
+          <div className="h-2 rounded-full bg-[#12121e] overflow-hidden"><div className="h-full bg-accent transition-[width]" style={{ width: `${Math.max(2, job.p * 100)}%` }} /></div>
           <div className="flex items-center gap-2"><span className="flex-1 text-muted">{job.label}</span><button type="button" className="btn" onClick={() => { job.cancel.cancelled = true; }}>Cancel</button></div>
         </div>
       ) : <button type="button" className="btn btn-primary h-8" onClick={() => void render()}>Render</button>}

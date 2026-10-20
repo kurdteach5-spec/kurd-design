@@ -3,7 +3,8 @@ import { useUI, type PanelId, type PanelGroup } from '../../state/uiStore';
 import { LayersPanel } from '../panels/LayersPanel';
 import { PropertiesPanel } from '../panels/PropertiesPanel';
 import { ColorPanel, SwatchesPanel, HistoryPanel, AdjustmentsPanel, BrushPanel, CharacterPanel, ParagraphPanel } from '../panels/OtherPanels';
-import { LuChevronDown, LuLayers, LuSlidersHorizontal, LuPalette, LuGrid3X3, LuHistory, LuContrast, LuBrush, LuType, LuPilcrow, LuPanelRightClose, LuPanelRightOpen, LuX } from 'react-icons/lu';
+import { LuChevronDown, LuLayers, LuSlidersHorizontal, LuPalette, LuGrid3X3, LuHistory, LuContrast, LuBrush, LuType, LuPilcrow, LuPanelRightClose, LuPanelRightOpen, LuX, LuCompass, LuChartColumn, LuInfo, LuLayers2 } from 'react-icons/lu';
+import { NavigatorPanel, HistogramPanel, InfoPanel, ChannelsPanel } from '../panels/PsPanels';
 
 export const PANEL_META: Record<PanelId, { label: string; icon: (p: { size?: number }) => ReactNode; render: () => ReactNode }> = {
   layers: { label: 'Layers', icon: LuLayers, render: () => <LayersPanel /> },
@@ -15,6 +16,10 @@ export const PANEL_META: Record<PanelId, { label: string; icon: (p: { size?: num
   brush: { label: 'Brush', icon: LuBrush, render: () => <BrushPanel /> },
   character: { label: 'Character', icon: LuType, render: () => <CharacterPanel /> },
   paragraph: { label: 'Paragraph', icon: LuPilcrow, render: () => <ParagraphPanel /> },
+  navigator: { label: 'Navigator', icon: LuCompass, render: () => <NavigatorPanel /> },
+  histogram: { label: 'Histogram', icon: LuChartColumn, render: () => <HistogramPanel /> },
+  info: { label: 'Info', icon: LuInfo, render: () => <InfoPanel /> },
+  channels: { label: 'Channels', icon: LuLayers2, render: () => <ChannelsPanel /> },
 };
 
 function setGroup(id: string, patch: Partial<PanelGroup>) {
@@ -29,7 +34,7 @@ function Group({ g, grow, floating }: { g: PanelGroup; grow: boolean; floating?:
   const collapsed = g.collapsed && !floating;
   return (
     <section className={`flex flex-col min-h-0 border-b border-line ${collapsed ? 'shrink-0' : grow ? 'flex-1 min-h-[240px]' : 'shrink'}`} style={!collapsed && !grow && !floating ? { maxHeight: g.id === 'g-color' ? 300 : '40%', flexBasis: 'auto' } : undefined} aria-label={`${PANEL_META[active].label} panel`}>
-      <div className="flex items-center h-[30px] bg-[#202328] border-b border-line-soft shrink-0 ps-1" role="tablist">
+      <div className="flex items-center h-[30px] bg-[#151522] border-b border-line-soft shrink-0 ps-1" role="tablist">
         <div className="flex h-full min-w-0 overflow-x-auto no-scrollbar">
           {tabs.map((t) => (
             <button type="button" key={t} role="tab" aria-selected={t === active} className="panel-tab shrink-0 whitespace-nowrap"

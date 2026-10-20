@@ -13,7 +13,7 @@ function Frame({ p, onClick }: { p: Preset; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} className="group flex flex-col items-center gap-2 p-2 rounded-[8px] hover:bg-raised transition-colors text-start w-[132px]" aria-label={`New ${p.name}, ${p.width} by ${p.height} pixels`}>
       <div className="h-[80px] flex items-end justify-center">
-        <div className="border border-[#59616c] group-hover:border-accent bg-[#2a2f36] group-hover:bg-[#2c3a52] transition-colors rounded-[2px]" style={{ width: Math.max(8, p.width * k), height: Math.max(8, p.height * k) }} />
+        <div className="border border-[#59616c] group-hover:border-accent bg-[#1d1d2f] group-hover:bg-[#2c3a52] transition-colors rounded-[2px]" style={{ width: Math.max(8, p.width * k), height: Math.max(8, p.height * k) }} />
       </div>
       <div className="text-center leading-tight">
         <div className="text-ink-strong">{p.name}</div>
@@ -71,7 +71,7 @@ export function HomeScreen() {
               <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3">
                 {projects.slice(0, 12).map((p) => (
                   <button type="button" key={p.id} className="group text-start rounded-[8px] border border-line-soft hover:border-accent bg-panel overflow-hidden transition-colors" onClick={() => void openProject(p.id)}>
-                    <div className="h-[120px] flex items-center justify-center bg-[#1d2025] p-2"><Thumb blob={p.thumb} /></div>
+                    <div className="h-[120px] flex items-center justify-center bg-[#12121e] p-2"><Thumb blob={p.thumb} /></div>
                     <div className="px-3 py-2">
                       <div className="text-ink-strong truncate">{p.name}</div>
                       <div className="text-faint num text-2xs">{`${p.width} × ${p.height} · ${timeAgo(p.updatedAt)}`}</div>

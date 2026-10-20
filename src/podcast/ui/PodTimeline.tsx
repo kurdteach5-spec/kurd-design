@@ -84,7 +84,7 @@ function Activity({ v, width, pps, scroll }: { v: number; width: number; pps: nu
       let m = 0, mine = 0, both = 0;
       for (let i = i0; i < i1; i++) { if (lv[i] > m) m = lv[i]; if (an.state[i] === who) mine++; else if (an.state[i] === BOTH) both++; }
       const h = Math.max(1, m * (H - 4));
-      ctx.fillStyle = mine * 2 >= i1 - i0 ? col : both * 2 >= i1 - i0 ? WIDE_COLOR : '#4a515c';
+      ctx.fillStyle = mine * 2 >= i1 - i0 ? col : both * 2 >= i1 - i0 ? WIDE_COLOR : '#3a3a58';
       ctx.fillRect(x, (H - h) / 2, 1, h);
     }
   }, [an, v, width, pps, scroll]);
@@ -106,7 +106,7 @@ export function PodTimeline() {
   usePod((s) => s.speakers);
   const overlays = usePod((s) => s.overlays);
   const voices = an?.speakers ?? [];
-  const LANES = [{ kind: 'usk', slot: 1, name: 'PIP', color: '#f0b400' }, { kind: 'dsk', slot: 1, name: 'DSK 1', color: '#36b3ff' }, { kind: 'dsk', slot: 2, name: 'DSK 2', color: '#a879ff' }, { kind: 'ftb', slot: 1, name: 'FTB', color: '#8a929d' }] as const;
+  const LANES = [{ kind: 'usk', slot: 1, name: 'PIP', color: '#f0b400' }, { kind: 'dsk', slot: 1, name: 'DSK 1', color: '#36b3ff' }, { kind: 'dsk', slot: 2, name: 'DSK 2', color: '#a879ff' }, { kind: 'ftb', slot: 1, name: 'FTB', color: '#9b9bb4' }] as const;
   const lanes = LANES.filter((l) => overlays.some((o) => o.kind === l.kind && o.slot === l.slot));
   const tipState = useTips();
   const allTips = usePod((s) => editTips(s));
@@ -176,7 +176,7 @@ export function PodTimeline() {
   const zoomVal = Math.round((Math.log(pps / 0.05) / Math.log(8000)) * 100);
 
   return (
-    <div className="h-full flex flex-col min-h-0 bg-[#1e2126]">
+    <div className="h-full flex flex-col min-h-0 bg-[#141421]">
       <div className="h-9 shrink-0 flex items-center gap-1.5 px-2 border-b border-line bg-panel overflow-x-auto overflow-y-hidden no-scrollbar">
         {selTip ? (
           <>
@@ -233,25 +233,25 @@ export function PodTimeline() {
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden" onWheel={(e) => { if (!(e.target as Element).closest('[data-tl-labels]')) onWheel(e); }}>
       <div className="flex" style={{ minHeight: '100%', height: top0 + voices.length * 28 + 6 }}>
-        <div data-tl-labels className="shrink-0 border-e border-line bg-[#22262b] text-2xs text-muted flex flex-col overflow-hidden" style={{ width: labelW }} data-tip="Scroll here to see more lanes">
+        <div data-tl-labels className="shrink-0 border-e border-line bg-[#171726] text-2xs text-muted flex flex-col overflow-hidden" style={{ width: labelW }} data-tip="Scroll here to see more lanes">
           <div className="h-[22px] shrink-0 border-b border-line" />
-          <div className="h-[44px] shrink-0 flex items-center px-2 border-b border-[#2a2e34] font-medium text-ink">Program</div>
-          <div className="flex items-center gap-1 px-2 border-b border-[#2a2e34] shrink-0" style={{ height: SH }}>
+          <div className="h-[44px] shrink-0 flex items-center px-2 border-b border-[#1d1d2e] font-medium text-ink">Program</div>
+          <div className="flex items-center gap-1 px-2 border-b border-[#1d1d2e] shrink-0" style={{ height: SH }}>
             <span className="text-[#4ee08a] truncate flex-1">{audioMode === 'picture' ? 'Sound' : audioMode === 'speaker' ? 'Sound · auto' : 'Sound · master'}</span>
             <button type="button" className={`icon-btn !w-5 !h-5 shrink-0 ${linked ? 'text-[#4ee08a]' : 'text-[#f0b400]'}`} aria-pressed={linked} aria-label={linked ? 'Picture and sound are linked' : 'Picture and sound are unlinked'}
               data-tip={linked ? 'Linked: picture and sound cut together. Click to unlink (then drag a sound cut alone for a J / L cut; Alt-drag also works)' : 'Unlinked: drag a sound cut alone (J / L cut). Click to link again'} onClick={() => useLink.setState({ linked: !linked })}>{linked ? <LuLink size={12} /> : <LuUnlink size={12} />}</button>
           </div>
-          {lanes.map((l) => <div key={l.name} className="h-[22px] flex items-center gap-1.5 px-2 border-b border-[#2a2e34] shrink-0"><span className="w-2 h-2 rounded-[2px] shrink-0" style={{ background: l.color }} /><span>{l.name}</span></div>)}
-          {tipLane && <div className="h-[22px] flex items-center gap-1.5 px-2 border-b border-[#2a2e34] shrink-0 text-[#f0b400]"><LuLightbulb size={11} /><span>Tips</span></div>}
-          {voices.map((id) => <div key={id} className="h-[28px] flex items-center gap-1.5 px-2 border-b border-[#2a2e34] min-w-0 shrink-0"><span className="w-2 h-2 rounded-full shrink-0" style={{ background: speakerColor(id) }} /><SpeakerLabel id={id} className="truncate" /></div>)}
+          {lanes.map((l) => <div key={l.name} className="h-[22px] flex items-center gap-1.5 px-2 border-b border-[#1d1d2e] shrink-0"><span className="w-2 h-2 rounded-[2px] shrink-0" style={{ background: l.color }} /><span>{l.name}</span></div>)}
+          {tipLane && <div className="h-[22px] flex items-center gap-1.5 px-2 border-b border-[#1d1d2e] shrink-0 text-[#f0b400]"><LuLightbulb size={11} /><span>Tips</span></div>}
+          {voices.map((id) => <div key={id} className="h-[28px] flex items-center gap-1.5 px-2 border-b border-[#1d1d2e] min-w-0 shrink-0"><span className="w-2 h-2 rounded-full shrink-0" style={{ background: speakerColor(id) }} /><SpeakerLabel id={id} className="truncate" /></div>)}
         </div>
         <div ref={right} className="relative flex-1 min-w-0 overflow-hidden touch-none select-none">
           {/* ruler */}
-          <div className="absolute left-0 right-0 top-0 h-[22px] border-b border-line bg-[#24282e] cursor-col-resize" onPointerDown={scrub} role="slider" aria-label="Time ruler" aria-valuenow={Math.round(t)}>
-            {ticks.map((s0) => <div key={s0} className="absolute top-0 bottom-0 border-s border-[#3a414b] ps-1 text-[10px] text-faint num" style={{ left: xOf(s0) }}>{mmss(s0 - (an?.start ?? 0))}</div>)}
+          <div className="absolute left-0 right-0 top-0 h-[22px] border-b border-line bg-[#191928] cursor-col-resize" onPointerDown={scrub} role="slider" aria-label="Time ruler" aria-valuenow={Math.round(t)}>
+            {ticks.map((s0) => <div key={s0} className="absolute top-0 bottom-0 border-s border-[#2c2c45] ps-1 text-[10px] text-faint num" style={{ left: xOf(s0) }}>{mmss(s0 - (an?.start ?? 0))}</div>)}
           </div>
           {/* program lane */}
-          <div className="absolute left-0 right-0 top-[22px] h-[44px] border-b border-[#2a2e34]" onPointerDown={scrub}>
+          <div className="absolute left-0 right-0 top-[22px] h-[44px] border-b border-[#1d1d2e]" onPointerDown={scrub}>
             {visible.map((x) => {
               const i = segs.indexOf(x);
               const l = xOf(x.start), w = Math.max(1, xOf(x.end) - l);
@@ -269,7 +269,7 @@ export function PodTimeline() {
             })}
           </div>
           {/* sound */}
-          <div className="absolute left-0 right-0 border-b border-[#2a2e34] bg-[#1b2420]" style={{ top: 66, height: SH }} onPointerDown={scrub}>
+          <div className="absolute left-0 right-0 border-b border-[#1d1d2e] bg-[#1b2420]" style={{ top: 66, height: SH }} onPointerDown={scrub}>
             <SoundLane width={width} pps={pps} scroll={scroll} />
             {sounds.map((g, k) => {
               if (k === 0) return null;
@@ -293,7 +293,7 @@ export function PodTimeline() {
           </div>
           {/* keys, downstream keys, fade to black */}
           {lanes.map((l, li) => (
-            <div key={l.name} className="absolute left-0 right-0 h-[22px] border-b border-[#2a2e34]" style={{ top: 66 + SH + li * OV }} onPointerDown={scrub}>
+            <div key={l.name} className="absolute left-0 right-0 h-[22px] border-b border-[#1d1d2e]" style={{ top: 66 + SH + li * OV }} onPointerDown={scrub}>
               {overlays.filter((o) => o.kind === l.kind && o.slot === l.slot && xOf(o.end) > -2 && xOf(o.start) < width + 2).map((o) => {
                 const lft = xOf(o.start), w = Math.max(2, xOf(o.end) - lft);
                 const fi = Math.min(100, (o.fadeIn / Math.max(0.001, o.end - o.start)) * 100), fo = Math.min(100, (o.fadeOut / Math.max(0.001, o.end - o.start)) * 100);
@@ -308,7 +308,7 @@ export function PodTimeline() {
           ))}
           {/* editing tips */}
           {tipLane && (
-            <div className="absolute left-0 right-0 h-[22px] border-b border-[#2a2e34]" style={{ top: 66 + SH + lanes.length * OV }} onPointerDown={scrub}>
+            <div className="absolute left-0 right-0 h-[22px] border-b border-[#1d1d2e]" style={{ top: 66 + SH + lanes.length * OV }} onPointerDown={scrub}>
               {tips.filter((x) => xOf(x.t) > -10 && xOf(x.t) < width + 10).map((x) => (
                 <button key={x.key} type="button" className={`absolute top-[3px] w-[16px] h-[16px] -ms-[8px] rounded-full flex items-center justify-center ${selected === `tip:${x.key}` ? 'ring-2 ring-white z-10' : ''}`}
                   style={{ left: xOf(x.t), background: TIP_COLOR[x.kind] }} aria-label={x.msg} data-tip={x.msg}
@@ -319,7 +319,7 @@ export function PodTimeline() {
             </div>
           )}
           {/* speaker lanes */}
-          {voices.map((id, v) => <div key={id} className="absolute left-0 right-0 h-[28px] border-b border-[#2a2e34]" style={{ top: top0 + v * 28 }} onPointerDown={scrub}><div className="absolute left-0 right-0 top-[2px] h-[24px]"><Activity v={v} width={width} pps={pps} scroll={scroll} /></div></div>)}
+          {voices.map((id, v) => <div key={id} className="absolute left-0 right-0 h-[28px] border-b border-[#1d1d2e]" style={{ top: top0 + v * 28 }} onPointerDown={scrub}><div className="absolute left-0 right-0 top-[2px] h-[24px]"><Activity v={v} width={width} pps={pps} scroll={scroll} /></div></div>)}
           <div className="absolute left-0 right-0 bottom-0" style={{ top: top0 + voices.length * 28 }} onPointerDown={scrub} />
           {/* export range */}
           {(inP !== null || outP !== null) && an && (

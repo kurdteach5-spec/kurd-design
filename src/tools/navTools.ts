@@ -30,7 +30,7 @@ export const zoomTool: Tool = {
   },
   drawOverlay(ctx) {
     if (!zStart || !zEnd) return;
-    ctx.save(); ctx.strokeStyle = '#4f8cff'; ctx.setLineDash([3, 3]);
+    ctx.save(); ctx.strokeStyle = '#7c5cff'; ctx.setLineDash([3, 3]);
     ctx.strokeRect(zStart.screen.x + 0.5, zStart.screen.y + 0.5, zEnd.x - zStart.screen.x, zEnd.y - zStart.screen.y); ctx.restore();
   },
 };

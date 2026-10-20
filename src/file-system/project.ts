@@ -57,7 +57,7 @@ export async function serializeProject(name: string, state: DocState): Promise<P
 }
 
 export async function deserializeProject(p: ProjectFile): Promise<DocState> {
-  if (!p || p.format !== 'designpro-studio' || !p.state) throw new Error('This is not a KURD DESIGN project file.');
+  if (!p || p.format !== 'designpro-studio' || !p.state) throw new Error('This is not a SARWAR DESIGN project file.');
   const images: HTMLCanvasElement[] = [];
   for (const src of p.images) images.push(await blobToCanvas(await (await fetch(src)).blob()));
   return restoreFromParts(p.state, images);

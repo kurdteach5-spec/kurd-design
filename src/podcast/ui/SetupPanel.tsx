@@ -6,7 +6,6 @@ import {
 } from '../store';
 import { drawInputTo, frameListeners, elementFor } from '../player';
 import { type SplitLayout } from '../types';
-import { setWorkspace } from '../../state/workspace';
 import { useEffect } from 'react';
 import { downloadEditPackage, saveEdit, openEdit, sendToMotion, exportRange } from '../exports';
 import { recorderFormat } from '../render';
@@ -58,7 +57,7 @@ function PeopleBox() {
   return (
     <div className="flex flex-col gap-2">
       {speakers.map((sp, i) => (
-        <div key={sp.id} className="rounded-[6px] border border-line bg-[#1f2328] p-2 flex flex-col gap-1.5">
+        <div key={sp.id} className="rounded-[6px] border border-line bg-[#151523] p-2 flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: speakerColor(sp.id) }} aria-hidden />
             <input className="field h-[24px] text-xs flex-1 min-w-0" value={sp.name} placeholder={`Speaker ${i + 1}`} aria-label={`Name of speaker ${i + 1}`} translate="no"
@@ -96,7 +95,7 @@ function CameraCard({ id, index, count }: { id: string; index: number; count: nu
     ...(speakers.length < 8 ? [{ value: 'new', label: 'New person…' }] : []),
   ];
   return (
-    <div className="rounded-[6px] border border-line bg-[#1f2328] p-2 flex flex-col gap-1.5">
+    <div className="rounded-[6px] border border-line bg-[#151523] p-2 flex flex-col gap-1.5">
       <div className="flex items-center gap-1.5">
         <span className="w-5 h-5 rounded-[4px] flex items-center justify-center text-[11px] font-bold text-black shrink-0" style={{ background: camColor(id) }} aria-hidden>{camKey(id)}</span>
         <CamLabel id={id} className="font-medium text-ink-strong text-xs flex-1 min-w-0 truncate" />
@@ -127,7 +126,7 @@ function CamerasBox() {
       onDragLeave={() => setOver(false)}
       onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setOver(false); void (async () => { for (const f of e.dataTransfer.files) await addCamera(f); })(); }}>
       {cams.map((c, i) => <CameraCard key={c.id} id={c.id} index={i} count={cams.length} />)}
-      <button type="button" className="w-full h-[46px] rounded-[5px] border border-dashed border-[#4a515c] text-muted hover:text-ink hover:border-accent text-xs flex items-center justify-center gap-1.5" onClick={() => void add()}>
+      <button type="button" className="w-full h-[46px] rounded-[5px] border border-dashed border-[#3a3a58] text-muted hover:text-ink hover:border-accent text-xs flex items-center justify-center gap-1.5" onClick={() => void add()}>
         {cams.length ? <LuPlus size={14} /> : <LuUpload size={14} />}<span>{cams.length ? 'Add camera' : 'Add the camera videos (3 or more)'}</span>
       </button>
       {cams.length > 0 && <div className="text-2xs text-faint">Choose what each camera shows. A person can have several cameras (medium, close-up) — the edit changes angles.</div>}
@@ -141,7 +140,7 @@ function BrollBox() {
   return (
     <div className="flex flex-col gap-1.5">
       {broll.map((id) => sources[id] && (
-        <div key={id} className="flex items-center gap-1.5 text-xs rounded-[5px] bg-[#1f2328] border border-line-soft px-2 py-1">
+        <div key={id} className="flex items-center gap-1.5 text-xs rounded-[5px] bg-[#151523] border border-line-soft px-2 py-1">
           <span className="w-2 h-2 rounded-full shrink-0" style={{ background: BROLL_COLOR }} aria-hidden />
           <span className="truncate flex-1 text-ink" translate="no">{sources[id].name}</span>
           <span className="text-2xs text-faint num">{fmtDur(sources[id].duration)}</span>
@@ -181,7 +180,7 @@ function SplitBox() {
   return (
     <div className="flex flex-col gap-2">
       {splits.map((sp) => (
-        <div key={sp.id} className="rounded-[6px] border border-line bg-[#1f2328] p-2 flex flex-col gap-1.5">
+        <div key={sp.id} className="rounded-[6px] border border-line bg-[#151523] p-2 flex flex-col gap-1.5">
           <div className="flex items-center gap-1.5">
             <CamLabel id={sp.id} className="font-medium text-ink-strong text-xs flex-1 truncate" />
             <span className="text-2xs text-faint">{`Input ${camKey(sp.id)}`}</span>
@@ -197,9 +196,8 @@ function SplitBox() {
       ))}
       <div className="flex gap-1.5">
         <button type="button" className="btn flex-1 h-[26px] text-xs inline-flex items-center justify-center gap-1.5" disabled={cams.length < 2} onClick={() => addSplit('side2')}><LuColumns2 size={13} />Add split screen</button>
-        <button type="button" className="btn h-[26px] text-xs px-2" onClick={() => setWorkspace('mixer')} data-tip="Design split screens freely (SuperSource) in the vision mixer">Design…</button>
       </div>
-      <div className="text-2xs text-faint">A split screen becomes an input like a camera. The automatic edit uses a split showing two people for their quick back-and-forth and when they talk at once. Move, resize and crop its boxes freely in the vision mixer (SuperSource).</div>
+      <div className="text-2xs text-faint">A split screen becomes an input like a camera. The automatic edit uses a split showing two people for their quick back-and-forth and when they talk at once.</div>
     </div>
   );
 }
@@ -228,12 +226,12 @@ function AnalysisBox() {
         <div className="flex flex-col gap-1.5" role="status" aria-live="polite">
           <div className="text-xs text-ink">{label}</div>
           {message && <div className="text-2xs text-faint truncate" translate="no">{message}</div>}
-          <div className="h-1.5 rounded-full bg-[#1a1d21] overflow-hidden"><div className="h-full bg-accent transition-[width]" style={{ width: `${Math.round(progress * 100)}%` }} /></div>
+          <div className="h-1.5 rounded-full bg-[#10101a] overflow-hidden"><div className="h-full bg-accent transition-[width]" style={{ width: `${Math.round(progress * 100)}%` }} /></div>
           <button type="button" className="btn self-start h-[24px] text-xs" onClick={cancelAnalysis}>Cancel</button>
         </div>
       )}
       {an && !an.stub && !busy && (
-        <div className="rounded-[6px] bg-[#1f2328] border border-line-soft p-2 flex flex-col gap-1.5 text-xs">
+        <div className="rounded-[6px] bg-[#151523] border border-line-soft p-2 flex flex-col gap-1.5 text-xs">
           <div className="text-2xs text-muted">Voices found</div>
           {an.speakers.map((spId, v) => (
             <div key={v} className="flex items-center gap-1.5">
@@ -373,7 +371,7 @@ function ExportBox() {
       {job ? (
         <div className="flex flex-col gap-1.5" role="status">
           <div className="text-xs">{`Rendering… ${Math.round(job.p * 100)}%`}</div>
-          <div className="h-1.5 rounded-full bg-[#1a1d21] overflow-hidden"><div className="h-full bg-accent" style={{ width: `${Math.round(job.p * 100)}%` }} /></div>
+          <div className="h-1.5 rounded-full bg-[#10101a] overflow-hidden"><div className="h-full bg-accent" style={{ width: `${Math.round(job.p * 100)}%` }} /></div>
           <div className="text-2xs text-faint">Rendering plays the edit in real time. Keep this tab open and visible.</div>
           <button type="button" className="btn self-start h-[24px] text-xs inline-flex items-center gap-1.5" onClick={job.cancel}><LuCircleStop size={13} />Cancel</button>
         </div>

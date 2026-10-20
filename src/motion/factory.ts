@@ -48,7 +48,7 @@ function base(comp: Composition, type: LayerType, name: string, t0: number, dur?
 
 const center = (comp: Composition): Vec3 => [comp.width / 2, comp.height / 2, 0];
 
-export function newSolid(comp: Composition, color = '#4f8cff', t0 = 0, w = comp.width, h = comp.height, name = 'Solid'): MLayer {
+export function newSolid(comp: Composition, color = '#7c5cff', t0 = 0, w = comp.width, h = comp.height, name = 'Solid'): MLayer {
   const b = base(comp, 'solid', name, t0);
   return { ...b, type: 'solid', color: prop(color), width: w, height: h, transform: defaultTransform([w / 2, h / 2, 0], center(comp)) };
 }
@@ -144,9 +144,9 @@ export function newShape(comp: Composition, kind: ShapeKind, t0 = 0, o: { size?:
     shape: {
       kind, size: prop<Vec2>(isLine ? [s[0], 0] : s), roundness: prop(0), sides: kind === 'star' ? 5 : 6, innerRadius: prop(45),
       path: prop<MPath>(o.path ?? rectPath(s[0], s[1])),
-      fillOn: !isLine && !(kind === 'path' && o.path && !o.path.closed), fill: prop(o.fill ?? '#4f8cff'),
+      fillOn: !isLine && !(kind === 'path' && o.path && !o.path.closed), fill: prop(o.fill ?? '#7c5cff'),
       strokeOn: isLine || (kind === 'path' && !!o.path && !o.path.closed), stroke: prop('#ffffff'), strokeWidth: prop(isLine ? 8 : 4),
-      trimStart: prop(0), trimEnd: prop(100),
+      trimStart: prop(0), trimEnd: prop(100), trimOffset: prop(0), roundCorners: prop(0),
     },
   };
 }

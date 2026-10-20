@@ -33,7 +33,7 @@ export function ProjectPanel() {
           const Icon = comp ? LuLayers : a!.kind === 'video' ? LuFilm : a!.kind === 'audio' ? LuMusic : LuImage;
           const dur = comp ? comp.duration : a!.duration;
           return (
-            <div key={id} role="option" aria-selected={sel === id} draggable className={`flex items-center gap-2 h-[26px] px-2.5 cursor-default text-xs ${sel === id ? 'bg-[#2f4670]' : 'hover:bg-[#282d33]'}`}
+            <div key={id} role="option" aria-selected={sel === id} draggable className={`flex items-center gap-2 h-[26px] px-2.5 cursor-default text-xs ${sel === id ? 'bg-[#3a2f73]' : 'hover:bg-[#1d1d2d]'}`}
               onDragStart={(e) => { e.dataTransfer.setData('text/kdm-item', id); e.dataTransfer.effectAllowed = 'copy'; }}
               onClick={() => useMotion.setState({ selectedProjectItem: id })}
               onDoubleClick={() => { if (comp) A.openComp(id); else A.addAssetLayer(id); }}
@@ -57,7 +57,7 @@ function ItemPreview({ id }: { id: string | null }) {
   useEffect(() => {
     const c = ref.current; if (!c || (!comp && !a)) return;
     const W = 240, H = 120; c.width = W; c.height = H;
-    const x = c.getContext('2d')!; x.fillStyle = '#1d2025'; x.fillRect(0, 0, W, H);
+    const x = c.getContext('2d')!; x.fillStyle = '#12121e'; x.fillRect(0, 0, W, H);
     const fit = (w: number, h: number) => { const k = Math.min(W / w, H / h); return [(W - w * k) / 2, (H - h * k) / 2, w * k, h * k]; };
     if (comp) {
       const img = renderComp(project, comp, Math.min(comp.duration / 2, 1), { quality: Math.min(1, 240 / comp.width), videoKey: 'thumb' });
@@ -66,13 +66,13 @@ function ItemPreview({ id }: { id: string | null }) {
     else if (a?.kind === 'audio' || a?.kind === 'video') {
       const peaks = assetData(a.id)?.peaks;
       if (a.kind === 'video') { const vid = document.createElement('video'); vid.muted = true; vid.src = assetData(a.id)?.url ?? ''; vid.currentTime = Math.min(1, a.duration / 2); vid.onseeked = () => { const [dx, dy, dw, dh] = fit(a.width, a.height); x.drawImage(vid, dx, dy, dw, dh); vid.removeAttribute('src'); vid.load(); }; }
-      else if (peaks) { x.fillStyle = '#4f8cff'; for (let i = 0; i < W; i++) { const p = peaks[Math.floor((i / W) * peaks.length)] ?? 0; x.fillRect(i, H / 2 - p * H * 0.45, 1, Math.max(1, p * H * 0.9)); } }
+      else if (peaks) { x.fillStyle = '#7c5cff'; for (let i = 0; i < W; i++) { const p = peaks[Math.floor((i / W) * peaks.length)] ?? 0; x.fillRect(i, H / 2 - p * H * 0.45, 1, Math.max(1, p * H * 0.9)); } }
     }
   }, [id, comp, a, v]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!comp && !a) return <div className="h-[34px] px-3 flex items-center text-faint text-2xs border-b border-line-soft">Select an item to see its details.</div>;
   return (
     <div className="flex gap-2.5 p-2 border-b border-line-soft">
-      <canvas ref={ref} className="w-[112px] h-[56px] rounded-[3px] bg-[#1d2025] shrink-0" aria-hidden />
+      <canvas ref={ref} className="w-[112px] h-[56px] rounded-[3px] bg-[#12121e] shrink-0" aria-hidden />
       <div className="min-w-0 text-2xs text-muted leading-relaxed">
         <div className="text-ink text-xs truncate" translate="no">{comp?.name ?? a!.name}</div>
         {comp ? <>

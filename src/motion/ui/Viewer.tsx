@@ -8,13 +8,13 @@ import { valueAt, setAt, formatTimecode } from '../anim';
 import { renderComp, layerCorners, compToLayer, layerToComp, compDeltaToParent, worldMatrix, isVisual, activeAt, contentBounds } from '../render/renderer';
 import { apply4 } from '../render/mat4';
 import { useAssetVersion, onVideoFrame } from '../media/assets';
-import { syncPaused, togglePlay, stop } from '../media/playback';
-import { useMotionUI } from '../uiState';
+import { syncPaused, togglePlay } from '../media/playback';
+import { useMotionUI, useViewerInfo } from '../uiState';
 import { pointInPolygon } from '../../utils/math';
 import { createCanvas, ctx2d } from '../../utils/canvas';
 import { toast } from '../../state/uiStore';
 import { pathToPath2D } from '../render/draw';
-import { LuPlay, LuPause, LuSquare, LuSkipBack, LuSkipForward, LuStepBack, LuStepForward, LuRepeat, LuX } from 'react-icons/lu';
+import { LuPlay, LuPause, LuX, LuGrid2X2, LuGrid3X3, LuScan, LuSpline } from 'react-icons/lu';
 
 // ---------- frame cache (RAM preview) ----------
 const frameCache = new Map<string, ImageBitmap>();
@@ -124,6 +124,15 @@ export function Viewer() {
 
   const selLayers = comp.layers.filter((l) => selected.includes(l.id));
   const single = selLayers.length === 1 ? selLayers[0] : null;
+
+  // ----- Info panel: comp position and colour under the pointer -----
+  const sampleInfo = (e: React.PointerEvent) => {
+    const r = box.current!.getBoundingClientRect(); const sx = e.clientX - r.left, sy = e.clientY - r.top;
+    const p = toComp(sx, sy);
+    let rgba: [number, number, number, number] | null = null;
+    try { const d = ctx2d(canvas.current!).getImageData(Math.floor(sx * dpr), Math.floor(sy * dpr), 1, 1).data; rgba = [d[0], d[1], d[2], d[3]]; } catch { /* not readable */ }
+    useViewerInfo.setState({ x: Math.round(p.x), y: Math.round(p.y), rgba });
+  };
 
   // ----- hit testing -----
   const hitLayer = (p: { x: number; y: number }): MLayer | null => {
@@ -369,7 +378,7 @@ export function Viewer() {
   const overlays: ReactElement[] = [];
   const S = (p: { x: number; y: number }) => toScreen(p);
   // comp frame
-  overlays.push(<rect key="frame" x={ox} y={oy} width={comp.width * zoom} height={comp.height * zoom} fill="none" stroke="#3a4049" />);
+  overlays.push(<rect key="frame" x={ox} y={oy} width={comp.width * zoom} height={comp.height * zoom} fill="none" stroke="#2c2c45" />);
   if (ui.showGrid) { const step = Math.max(comp.width, comp.height) / 12; for (let gx = step; gx < comp.width; gx += step) overlays.push(<line key={`gx${gx}`} x1={S({ x: gx, y: 0 }).x} y1={oy} x2={S({ x: gx, y: 0 }).x} y2={oy + comp.height * zoom} stroke="#ffffff22" />); for (let gy = step; gy < comp.height; gy += step) overlays.push(<line key={`gy${gy}`} x1={ox} y1={S({ x: 0, y: gy }).y} x2={ox + comp.width * zoom} y2={S({ x: 0, y: gy }).y} stroke="#ffffff22" />); }
   if (ui.showSafe) for (const [k, f] of [['a', 0.05], ['t', 0.1]] as const) overlays.push(<rect key={`safe${k}`} x={ox + comp.width * f * zoom} y={oy + comp.height * f * zoom} width={comp.width * (1 - 2 * f) * zoom} height={comp.height * (1 - 2 * f) * zoom} fill="none" stroke="#ffffff44" strokeDasharray="4 3" />);
   for (const l of selLayers) {
@@ -380,11 +389,11 @@ export function Viewer() {
       overlays.push(<polygon key={`b${l.id}`} points={sc.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" stroke={l.label} strokeWidth={1.2} />);
       if (single && !l.threeD && (tool === 'select' || tool === 'rotate')) {
         const mids = [sc[0], mid(sc[0], sc[1]), sc[1], mid(sc[1], sc[2]), sc[2], mid(sc[2], sc[3]), sc[3], mid(sc[3], sc[0])];
-        mids.forEach((p, i) => overlays.push(<rect key={`h${l.id}${i}`} data-h="scale" data-layer={l.id} data-idx={i} x={p.x - 4} y={p.y - 4} width={8} height={8} fill="#1b1e22" stroke={l.label} style={{ cursor: i % 4 === 0 ? 'nwse-resize' : i % 4 === 2 ? 'nesw-resize' : i % 4 === 1 ? 'ns-resize' : 'ew-resize' }} />));
+        mids.forEach((p, i) => overlays.push(<rect key={`h${l.id}${i}`} data-h="scale" data-layer={l.id} data-idx={i} x={p.x - 4} y={p.y - 4} width={8} height={8} fill="#11111c" stroke={l.label} style={{ cursor: i % 4 === 0 ? 'nwse-resize' : i % 4 === 2 ? 'nesw-resize' : i % 4 === 1 ? 'ns-resize' : 'ew-resize' }} />));
         const top = mid(sc[0], sc[1]); const cen = mid(sc[0], sc[2]); const dir = norm({ x: top.x - cen.x, y: top.y - cen.y });
         const rp = { x: top.x + dir.x * 24, y: top.y + dir.y * 24 };
         overlays.push(<line key={`rl${l.id}`} x1={top.x} y1={top.y} x2={rp.x} y2={rp.y} stroke={l.label} />);
-        overlays.push(<circle key={`r${l.id}`} data-h="rotate" data-layer={l.id} cx={rp.x} cy={rp.y} r={5} fill="#1b1e22" stroke={l.label} style={{ cursor: 'grab' }} />);
+        overlays.push(<circle key={`r${l.id}`} data-h="rotate" data-layer={l.id} cx={rp.x} cy={rp.y} r={5} fill="#11111c" stroke={l.label} style={{ cursor: 'grab' }} />);
       }
     }
     // anchor point
@@ -407,9 +416,9 @@ export function Viewer() {
           const tv = k[which] ?? [0, 0];
           const hp = S(parentToComp(comp, l, t, [(k.v as Vec3)[0] + tv[0], (k.v as Vec3)[1] + tv[1], 0]));
           if (tv[0] || tv[1]) overlays.push(<line key={`tl${k.id}${which}`} x1={kp.x} y1={kp.y} x2={hp.x} y2={hp.y} stroke="#e8b04c88" />);
-          overlays.push(<circle key={`t${k.id}${which}`} data-h="tangent" data-layer={l.id} data-key={k.id} data-which={which} cx={tv[0] || tv[1] ? hp.x : kp.x + (which === 'so' ? 10 : -10)} cy={tv[0] || tv[1] ? hp.y : kp.y} r={3.5} fill="#e8b04c" stroke="#1b1e22" style={{ cursor: 'crosshair', opacity: tv[0] || tv[1] ? 1 : 0.45 }} />);
+          overlays.push(<circle key={`t${k.id}${which}`} data-h="tangent" data-layer={l.id} data-key={k.id} data-which={which} cx={tv[0] || tv[1] ? hp.x : kp.x + (which === 'so' ? 10 : -10)} cy={tv[0] || tv[1] ? hp.y : kp.y} r={3.5} fill="#e8b04c" stroke="#11111c" style={{ cursor: 'crosshair', opacity: tv[0] || tv[1] ? 1 : 0.45 }} />);
         }
-        overlays.push(<rect key={`pk${k.id}`} data-h="pathKey" data-layer={l.id} data-key={k.id} x={kp.x - 4} y={kp.y - 4} width={8} height={8} fill="#e8b04c" stroke="#1b1e22" style={{ cursor: 'move' }} />);
+        overlays.push(<rect key={`pk${k.id}`} data-h="pathKey" data-layer={l.id} data-key={k.id} x={kp.x - 4} y={kp.y - 4} width={8} height={8} fill="#e8b04c" stroke="#11111c" style={{ cursor: 'move' }} />);
       }
     }
     // masks
@@ -422,7 +431,7 @@ export function Viewer() {
         const vp = toS(v.x, v.y);
         if (v.ox || v.oy) { const hp = toS(v.x + v.ox, v.y + v.oy); overlays.push(<line key={`mol${m.id}${i}`} x1={vp.x} y1={vp.y} x2={hp.x} y2={hp.y} stroke="#f2c94c88" />, <circle key={`mo${m.id}${i}`} data-h="mask" data-layer={l.id} data-mask={m.id} data-idx={i} data-part="o" cx={hp.x} cy={hp.y} r={3} fill="#f2c94c" />); }
         if (v.ix || v.iy) { const hp = toS(v.x + v.ix, v.y + v.iy); overlays.push(<line key={`mil${m.id}${i}`} x1={vp.x} y1={vp.y} x2={hp.x} y2={hp.y} stroke="#f2c94c88" />, <circle key={`mi${m.id}${i}`} data-h="mask" data-layer={l.id} data-mask={m.id} data-idx={i} data-part="i" cx={hp.x} cy={hp.y} r={3} fill="#f2c94c" />); }
-        overlays.push(<rect key={`mv${m.id}${i}`} data-h="mask" data-layer={l.id} data-mask={m.id} data-idx={i} data-part="p" x={vp.x - 3.5} y={vp.y - 3.5} width={7} height={7} fill="#1b1e22" stroke="#f2c94c" style={{ cursor: 'move' }} />);
+        overlays.push(<rect key={`mv${m.id}${i}`} data-h="mask" data-layer={l.id} data-mask={m.id} data-idx={i} data-part="p" x={vp.x - 3.5} y={vp.y - 3.5} width={7} height={7} fill="#11111c" stroke="#f2c94c" style={{ cursor: 'move' }} />);
       });
     }
   }
@@ -435,14 +444,14 @@ export function Viewer() {
   if (drag?.kind === 'draw') {
     const a = S(drag.a), b = S(drag.b);
     const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y), w = Math.abs(b.x - a.x), h = Math.abs(b.y - a.y);
-    overlays.push(drag.shape === 'ellipse' ? <ellipse key="draw" cx={x + w / 2} cy={y + h / 2} rx={w / 2} ry={h / 2} fill="#4f8cff22" stroke="#4f8cff" /> : <rect key="draw" x={x} y={y} width={w} height={h} fill="#4f8cff22" stroke="#4f8cff" />);
+    overlays.push(drag.shape === 'ellipse' ? <ellipse key="draw" cx={x + w / 2} cy={y + h / 2} rx={w / 2} ry={h / 2} fill="#4f8cff22" stroke="#7c5cff" /> : <rect key="draw" x={x} y={y} width={w} height={h} fill="#4f8cff22" stroke="#7c5cff" />);
   }
   if (pen) {
     const pts = pen.pts.map((v) => ({ ...v, ...penToComp(v, pen.layerId) }));
     const target = pen.layerId ? comp.layers.find((x) => x.id === pen.layerId) : null;
     const toS = (x: number, y: number) => S(target ? layerToComp(comp, target, t, x, y) : { x, y });
-    overlays.push(<path key="pen" d={svgPath({ points: pen.pts, closed: false }, toS)} fill="none" stroke="#4f8cff" strokeWidth={1.5} />);
-    pts.forEach((v, i) => { const s = S(v); overlays.push(<rect key={`pv${i}`} x={s.x - 3.5} y={s.y - 3.5} width={7} height={7} fill={i === 0 ? '#4f8cff' : '#1b1e22'} stroke="#4f8cff" />); });
+    overlays.push(<path key="pen" d={svgPath({ points: pen.pts, closed: false }, toS)} fill="none" stroke="#7c5cff" strokeWidth={1.5} />);
+    pts.forEach((v, i) => { const s = S(v); overlays.push(<rect key={`pv${i}`} x={s.x - 3.5} y={s.y - 3.5} width={7} height={7} fill={i === 0 ? '#7c5cff' : '#11111c'} stroke="#7c5cff" />); });
   }
 
   const cursor = tool === 'hand' ? (drag?.kind === 'pan' ? 'grabbing' : 'grab') : tool === 'zoom' ? 'zoom-in' : tool === 'text' ? 'text' : tool === 'select' || tool === 'anchor' ? 'default' : 'crosshair';
@@ -451,8 +460,9 @@ export function Viewer() {
   return (
     <div className="h-full flex flex-col min-h-0">
       <CompTabs />
-      <div ref={box} className="relative flex-1 min-h-0 overflow-hidden bg-[#141619] touch-none" style={{ cursor }}
-        onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
+      <div ref={box} className="relative flex-1 min-h-0 overflow-hidden bg-[#0b0b14] touch-none" style={{ cursor }}
+        onPointerDown={onDown} onPointerMove={(e) => { sampleInfo(e); onMove(e); }} onPointerUp={onUp} onPointerCancel={onUp}
+        onPointerLeave={() => useViewerInfo.setState({ x: null, y: null, rgba: null })}
         onDoubleClick={(e) => {
           const r = box.current!.getBoundingClientRect(); const p = toComp(e.clientX - r.left, e.clientY - r.top);
           if (tool === 'pen') { finishPen(false); return; }
@@ -513,8 +523,8 @@ function parentToComp(comp: Composition, l: MLayer, t: number, v: Vec3 | number[
 }
 let pattern: CanvasPattern | null = null;
 function checkerPattern(x: CanvasRenderingContext2D) {
-  if (!pattern) { const c = createCanvas(16, 16); const y = ctx2d(c); y.fillStyle = '#2a2e34'; y.fillRect(0, 0, 16, 16); y.fillStyle = '#353a42'; y.fillRect(0, 0, 8, 8); y.fillRect(8, 8, 8, 8); pattern = x.createPattern(c, 'repeat'); }
-  return pattern ?? '#2a2e34';
+  if (!pattern) { const c = createCanvas(16, 16); const y = ctx2d(c); y.fillStyle = '#1d1d2e'; y.fillRect(0, 0, 16, 16); y.fillStyle = '#29293f'; y.fillRect(0, 0, 8, 8); y.fillRect(8, 8, 8, 8); pattern = x.createPattern(c, 'repeat'); }
+  return pattern ?? '#1d1d2e';
 }
 
 function ViewerInfo({ comp, zoom }: { comp: Composition; zoom: number }) {
@@ -530,9 +540,9 @@ function CompTabs() {
   return (
     <div className="h-[28px] shrink-0 flex items-end gap-px px-1 bg-panel border-b border-line overflow-x-auto" role="tablist" aria-label="Open compositions">
       {open.filter((id) => comps[id]).map((id) => (
-        <div key={id} role="tab" aria-selected={id === active} className={`group flex items-center gap-1.5 h-[24px] ps-2.5 pe-1 rounded-t-[4px] cursor-default text-xs shrink-0 ${id === active ? 'bg-[#141619] text-ink-strong' : 'bg-[#22262b] text-muted hover:text-ink'}`}
+        <div key={id} role="tab" aria-selected={id === active} className={`group flex items-center gap-1.5 h-[24px] ps-2.5 pe-1 rounded-t-[4px] cursor-default text-xs shrink-0 ${id === active ? 'bg-[#0b0b14] text-ink-strong' : 'bg-[#171726] text-muted hover:text-ink'}`}
           onClick={() => A.openComp(id)}>
-          <span className="truncate max-w-[180px]" translate="no">{comps[id].name}</span>
+          <span className="text-faint">Composition</span><span className="truncate max-w-[180px]" translate="no">{comps[id].name}</span>
           <button type="button" className="w-4 h-4 rounded flex items-center justify-center opacity-60 hover:opacity-100 hover:bg-hover" aria-label={`Close ${comps[id].name}`} onClick={(e) => { e.stopPropagation(); A.closeCompTab(id); }}><LuX size={11} /></button>
         </div>
       ))}
@@ -542,43 +552,39 @@ function CompTabs() {
 
 function PreviewBar({ comp, t, zoom }: { comp: Composition; t: number; zoom: number }) {
   const playing = useMotion((s) => s.playing);
-  const loop = useMotion((s) => s.loop);
   const quality = useMotion((s) => s.quality);
   const view = useMotion((s) => s.view);
-  const Btn = ({ label, onClick, children, on }: { label: string; onClick: () => void; children: React.ReactNode; on?: boolean }) => (
-    <button type="button" className={`icon-btn ${on ? '!text-accent' : ''}`} aria-label={label} data-tip={label} aria-pressed={on} onClick={onClick}>{children}</button>
+  const ui = useMotionUI();
+  const previewShown = ui.rightOpen.preview && ui.aeWorkspace !== 'minimal' && window.innerWidth >= 860;
+  const Tog = ({ label, on, onClick, children }: { label: string; on: boolean; onClick: () => void; children: React.ReactNode }) => (
+    <button type="button" className={`icon-btn ${on ? '!text-[#a78bfa] !bg-accent-soft' : ''}`} aria-label={label} data-tip={label} aria-pressed={on} onClick={onClick}>{children}</button>
   );
   return (
     <div className="h-9 shrink-0 flex items-center gap-1 px-2 bg-panel border-t border-line overflow-x-auto overflow-y-hidden no-scrollbar">
-      <Btn label="Go to start (Home)" onClick={A.goToStart}><LuSkipBack size={15} /></Btn>
-      <Btn label="Previous frame (Page Up)" onClick={() => A.stepFrames(-1)}><LuStepBack size={15} /></Btn>
-      <button type="button" className="h-7 w-9 shrink-0 rounded-[5px] bg-accent text-white flex items-center justify-center" aria-label={playing ? 'Pause (Space)' : 'Play (Space)'} data-tip={playing ? 'Pause (Space)' : 'Play (Space)'} onClick={togglePlay}>{playing ? <LuPause size={16} /> : <LuPlay size={16} />}</button>
-      <Btn label="Stop" onClick={stop}><LuSquare size={13} /></Btn>
-      <Btn label="Next frame (Page Down)" onClick={() => A.stepFrames(1)}><LuStepForward size={15} /></Btn>
-      <Btn label="Go to end (End)" onClick={A.goToEnd}><LuSkipForward size={15} /></Btn>
-      <Btn label="Loop" on={loop} onClick={() => useMotion.setState({ loop: !loop })}><LuRepeat size={14} /></Btn>
-      <span className="num text-xs text-accent ms-2 w-[84px] shrink-0 hidden sm:inline">{formatTimecode(t, comp.fps)}</span>
+      {!previewShown && <button type="button" className="h-7 w-9 shrink-0 rounded-[6px] bg-accent text-white flex items-center justify-center me-1" aria-label={playing ? 'Pause (Space)' : 'Play (Space)'} data-tip={playing ? 'Pause (Space)' : 'Play (Space)'} onClick={togglePlay}>{playing ? <LuPause size={16} /> : <LuPlay size={16} />}</button>}
+      <select className="field h-[22px] text-xs shrink-0" value={view.fit ? 'fit' : String(Math.round(view.zoom * 100))} aria-label="Magnification ratio" data-tip="Magnification ratio"
+        onChange={(e) => useMotion.setState((s) => ({ view: e.target.value === 'fit' ? { ...s.view, fit: true, panX: 0, panY: 0 } : { ...s.view, fit: false, zoom: Number(e.target.value) / 100, panX: 0, panY: 0 } }))}>
+        <option value="fit">Fit ({Math.round(zoom * 100)}%)</option>{[25, 33, 50, 100, 200, 400].map((z) => <option key={z} value={z}>{z}%</option>)}
+        {!view.fit && ![25, 33, 50, 100, 200, 400].includes(Math.round(view.zoom * 100)) && <option value={Math.round(view.zoom * 100)}>{Math.round(view.zoom * 100)}%</option>}
+      </select>
+      <select className="field h-[22px] text-xs shrink-0" value={String(quality)} aria-label="Resolution" data-tip="Resolution / down sample factor" onChange={(e) => useMotion.setState({ quality: Number(e.target.value) as 1 | 0.5 | 0.25 })}>
+        <option value="1">Full</option><option value="0.5">Half</option><option value="0.25">Quarter</option>
+      </select>
+      <span className="num text-[13px] text-[#a78bfa] font-medium mx-2 shrink-0" data-tip="Current time">{formatTimecode(t, comp.fps)}</span>
+      <div className="w-px h-5 bg-line mx-0.5 shrink-0" />
+      <Tog label="Toggle Transparency Grid" on={ui.checker} onClick={() => useMotionUI.setState({ checker: !ui.checker })}><LuGrid2X2 size={14} /></Tog>
+      <Tog label="Grid" on={ui.showGrid} onClick={() => useMotionUI.setState({ showGrid: !ui.showGrid })}><LuGrid3X3 size={14} /></Tog>
+      <Tog label="Title/Action Safe" on={ui.showSafe} onClick={() => useMotionUI.setState({ showSafe: !ui.showSafe })}><LuScan size={14} /></Tog>
+      <Tog label="Toggle Mask and Shape Path Visibility" on={ui.showPaths} onClick={() => useMotionUI.setState({ showPaths: !ui.showPaths })}><LuSpline size={14} /></Tog>
       <div className="flex-1 min-w-[8px]" />
-      <label className="flex items-center gap-1.5 text-xs text-muted shrink-0"><span className="hidden md:inline">Quality</span>
-        <select className="field h-[22px] text-xs" value={String(quality)} aria-label="Preview quality" onChange={(e) => useMotion.setState({ quality: Number(e.target.value) as 1 | 0.5 | 0.25 })}>
-          <option value="1">Full</option><option value="0.5">Half</option><option value="0.25">Quarter</option>
-        </select>
-      </label>
-      <label className="flex items-center gap-1.5 text-xs text-muted shrink-0"><span className="hidden md:inline">Zoom</span>
-        <select className="field h-[22px] text-xs" value={view.fit ? 'fit' : String(Math.round(view.zoom * 100))} aria-label="Viewer zoom"
-          onChange={(e) => useMotion.setState((s) => ({ view: e.target.value === 'fit' ? { ...s.view, fit: true, panX: 0, panY: 0 } : { ...s.view, fit: false, zoom: Number(e.target.value) / 100, panX: 0, panY: 0 } }))}>
-          <option value="fit">Fit ({Math.round(zoom * 100)}%)</option>{[25, 33, 50, 100, 200, 400].map((z) => <option key={z} value={z}>{z}%</option>)}
-          {!view.fit && ![25, 33, 50, 100, 200, 400].includes(Math.round(view.zoom * 100)) && <option value={Math.round(view.zoom * 100)}>{Math.round(view.zoom * 100)}%</option>}
-        </select>
-      </label>
-      <span className="text-2xs text-faint num ms-1 shrink-0 hidden lg:inline">{comp.fps} fps</span>
+      <span className="text-2xs text-faint num ms-1 shrink-0 hidden lg:inline">{`${comp.width}×${comp.height} · ${comp.fps} fps`}</span>
     </div>
   );
 }
 
 function EmptyViewer() {
   return (
-    <div className="h-full flex flex-col items-center justify-center gap-3 text-center p-6 bg-[#141619]">
+    <div className="h-full flex flex-col items-center justify-center gap-3 text-center p-6 bg-[#0b0b14]">
       <div className="text-ink-strong text-lg font-semibold">MOTION</div>
       <div className="text-muted max-w-[420px]">Create a composition, or import video, images or audio to start animating. You can also drop files anywhere here.</div>
       <div className="flex gap-2 flex-wrap justify-center">

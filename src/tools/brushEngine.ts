@@ -153,7 +153,7 @@ export class RetouchStroke {
   takeDirty() { const d = this.dirty; this.dirty = null; return d; }
   constructor(
     readonly target: PaintTarget, readonly state: DocState,
-    readonly op: 'blur' | 'sharpen' | 'smudge' | 'dodge' | 'burn',
+    readonly op: 'blur' | 'sharpen' | 'smudge' | 'dodge' | 'burn' | 'saturate' | 'desaturate',
     readonly size: number, readonly hardness: number, readonly strength: number, readonly range: 'shadows' | 'midtones' | 'highlights' = 'midtones',
   ) {
     this.x = ctx2d(target.canvas, true);
@@ -223,6 +223,15 @@ export class RetouchStroke {
             d[k + ch] = mixed;
           }
         }
+      }
+    } else if (this.op === 'saturate' || this.op === 'desaturate') {
+      // Sponge: pushes colours away from (or toward) their grey
+      const f0 = s * 0.2;
+      for (let p = 0; p < w * h; p++) {
+        const wt = weights[p]; if (!wt) continue;
+        const k = p * 4; const g = 0.299 * d[k] + 0.587 * d[k + 1] + 0.114 * d[k + 2];
+        const f = wt * f0;
+        for (let ch = 0; ch < 3; ch++) d[k + ch] = this.op === 'desaturate' ? d[k + ch] + (g - d[k + ch]) * f : d[k + ch] + (d[k + ch] - g) * f;
       }
     } else {
       const ex = s * 0.25;

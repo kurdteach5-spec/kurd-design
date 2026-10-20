@@ -106,7 +106,7 @@ function SmartFilterRows({ layer, depth }: { layer: SmartObjectLayer; depth: num
       {layer.filters.map((f, i) => {
         const name = f.kind === 'filter' ? filterById(f.filter)?.name ?? f.filter : ADJUSTMENT_LABELS[f.adjustment.kind];
         return (
-          <div key={f.id} className="group flex items-center gap-1.5 h-[24px] pe-2 hover:bg-[#2b3037] cursor-default" style={{ paddingLeft: pad + 14 }}
+          <div key={f.id} className="group flex items-center gap-1.5 h-[24px] pe-2 hover:bg-[#1f1f31] cursor-default" style={{ paddingLeft: pad + 14 }}
             onDoubleClick={() => openDialog({ type: 'smart-filter', layerId: layer.id, index: i })} data-tip="Double-click to change">
             <button type="button" className="w-6 h-5 flex items-center justify-center text-muted hover:text-ink" aria-label={f.enabled ? 'Hide filter' : 'Show filter'}
               onClick={(e) => { e.stopPropagation(); setSmartFilterEnabled(layer.id, i, !f.enabled); }}>{f.enabled ? <LuEye size={12} /> : <LuEyeOff size={12} className="opacity-60" />}</button>
@@ -151,7 +151,7 @@ function LayerRow({ layer, depth, st, selected, active, drop, renaming, onRename
       tabIndex={active ? 0 : -1}
       onKeyDown={(e) => { if (e.key === 'F2' || (e.key === 'Enter' && !renaming)) { e.preventDefault(); onStartRename(); } }}
       className={`group relative flex items-center gap-1.5 h-[42px] pe-2 cursor-default border-y border-transparent
-        ${selected ? (active ? 'bg-[#2f4670]' : 'bg-[#2a3445]') : 'hover:bg-[#2b3037]'}
+        ${selected ? (active ? 'bg-[#3a2f73]' : 'bg-[#2a3445]') : 'hover:bg-[#1f1f31]'}
         ${drop === 'inside' ? '!border-accent' : ''}`}
       style={{ paddingLeft: 4 + depth * 14 }}
     >
@@ -172,9 +172,9 @@ function LayerRow({ layer, depth, st, selected, active, drop, renaming, onRename
         onDoubleClick={(e) => { if (layer.type === 'text') { e.stopPropagation(); editTextLayer(layer.id); } else if (layer.type === 'smart') { e.stopPropagation(); editSmartContents(layer.id); } }}
         data-tip={layer.type === 'text' ? 'Double-click to edit the text' : layer.type === 'smart' ? 'Double-click to edit the contents' : `${isMac ? '⌘' : 'Ctrl'}-click to load as selection`}>
         {layer.type === 'group' ? <div className="w-8 h-8 flex items-center justify-center text-[#c9b37a]">{layer.expanded ? <LuFolderOpen size={20} /> : <LuFolder size={20} />}</div>
-          : layer.type === 'adjustment' ? <div className="w-8 h-8 flex items-center justify-center bg-[#1d2025] rounded-[3px] text-muted"><LuContrast size={18} /></div>
+          : layer.type === 'adjustment' ? <div className="w-8 h-8 flex items-center justify-center bg-[#12121e] rounded-[3px] text-muted"><LuContrast size={18} /></div>
           : <div className="relative"><LayerThumb layer={layer} docW={st.width} docH={st.height} />
-            {layer.type === 'smart' && <span className="absolute -bottom-0.5 -right-0.5 bg-[#1d2025] rounded-[2px] p-px text-ink" aria-label="Smart object"><LuBox size={10} /></span>}</div>}
+            {layer.type === 'smart' && <span className="absolute -bottom-0.5 -right-0.5 bg-[#12121e] rounded-[2px] p-px text-ink" aria-label="Smart object"><LuBox size={10} /></span>}</div>}
       </div>
       {layer.mask && (
         <>
@@ -193,7 +193,7 @@ function LayerRow({ layer, depth, st, selected, active, drop, renaming, onRename
         </>
       )}
       {layer.vectorMask && (
-        <div className={`shrink-0 w-8 h-8 rounded-[3px] bg-[#9aa3ae] flex items-center justify-center text-[#1d2025] ${target === 'vectorMask' ? 'outline outline-1 outline-white' : ''} ${layer.vectorMask.enabled ? '' : 'opacity-40'}`}
+        <div className={`shrink-0 w-8 h-8 rounded-[3px] bg-[#9aa3ae] flex items-center justify-center text-[#12121e] ${target === 'vectorMask' ? 'outline outline-1 outline-white' : ''} ${layer.vectorMask.enabled ? '' : 'opacity-40'}`}
           data-tip="Vector mask · Shift-click to disable" onClick={(e) => { e.stopPropagation(); if (e.shiftKey) L.updateVectorMask(layer.id, { enabled: !layer.vectorMask!.enabled }, 'Toggle Vector Mask'); else L.setEditTarget(layer.id, 'vectorMask'); }}>
           <LuPenTool size={14} />
         </div>

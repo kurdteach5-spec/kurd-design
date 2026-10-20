@@ -2,6 +2,7 @@
 import type { Interp, Keyframe, MPath, Prop, PropValue, Vec2 } from './types';
 import { hexToRgb, rgbToHex } from '../utils/color';
 import { uid } from '../utils/id';
+import { evalExpression } from './expr';
 
 export const LINEAR_OUT: Vec2 = [1 / 3, 1 / 3];
 export const LINEAR_IN: Vec2 = [2 / 3, 2 / 3];
@@ -106,8 +107,13 @@ export function segmentProgress(k0: Keyframe, k1: Keyframe, t: number): number {
 }
 const isLinearIn = (k: Keyframe) => k.in[0] === LINEAR_IN[0] && k.in[1] === LINEAR_IN[1];
 
-/** Value of a property at time t. */
+/** Value of a property at time t (keyframes, then the expression if it has one). */
 export function valueAt<T extends PropValue>(p: Prop<T>, t: number): T {
+  if (p.x && !p.xOff) return evalExpression(p as Prop, t, rawValueAt as (p: Prop, t: number) => PropValue) as T;
+  return rawValueAt(p, t);
+}
+/** Keyframed value only (no expression). */
+export function rawValueAt<T extends PropValue>(p: Prop<T>, t: number): T {
   const k = p.k;
   if (!k.length) return p.v;
   if (t <= k[0].t) return k[0].v;
@@ -146,8 +152,8 @@ export function setAt<T extends PropValue>(p: Prop<T>, t: number, v: T, fps: num
 
 /** Stopwatch: turns animation on (adds a key at t with the current value) or off (keeps the value at t). */
 export function toggleAnimated<T extends PropValue>(p: Prop<T>, t: number): Prop<T> {
-  if (p.k.length) return { v: valueAt(p, t), k: [] };
-  return { v: p.v, k: [makeKey(t, p.v)] };
+  if (p.k.length) return { ...p, v: rawValueAt(p, t), k: [] };
+  return { ...p, v: p.v, k: [makeKey(t, p.v)] };
 }
 
 /** Adds a keyframe at t with the current animated value (or removes the one already there). */
@@ -155,15 +161,15 @@ export function toggleKeyAt<T extends PropValue>(p: Prop<T>, t: number, fps: num
   const i = p.k.findIndex((k) => sameTime(k.t, t, fps));
   if (i >= 0) {
     const k = p.k.filter((_, j) => j !== i);
-    return k.length ? { ...p, k } : { v: p.k[i].v, k: [] };
+    return k.length ? { ...p, k } : { ...p, v: p.k[i].v, k: [] };
   }
-  return { ...p, k: sortKeys([...p.k, makeKey(t, valueAt(p, t))]) };
+  return { ...p, k: sortKeys([...p.k, makeKey(t, rawValueAt(p, t))]) };
 }
 
 export function removeKeys<T extends PropValue>(p: Prop<T>, ids: Set<string>, t: number): Prop<T> {
   const k = p.k.filter((x) => !ids.has(x.id));
   if (k.length === p.k.length) return p;
-  return k.length ? { ...p, k } : { v: valueAt(p, t), k: [] };
+  return k.length ? { ...p, k } : { ...p, v: rawValueAt(p, t), k: [] };
 }
 
 export function shiftKeys<T extends PropValue>(p: Prop<T>, ids: Set<string>, dt: number, fps: number): Prop<T> {

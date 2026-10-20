@@ -4,7 +4,8 @@ import { valueAt, sameTime } from '../anim';
 import { getProp, useMotion, setTime } from '../store';
 import * as A from '../actions';
 import type { PropMeta } from './propTree';
-import { ColorButton } from '../../components/ui/controls';
+import { ColorButton, Popover } from '../../components/ui/controls';
+import { exprError } from '../expr';
 import { LuTimer, LuLink, LuUnlink } from 'react-icons/lu';
 
 const round = (v: number, step = 1) => { const p = step < 1 ? Math.max(1, Math.ceil(-Math.log10(step))) : 0; const k = 10 ** p; return Math.round(v * k) / k; };
@@ -66,7 +67,7 @@ export function KeyControls({ layer, path, prop, t, fps }: { layer: MLayer; path
     <span className="inline-flex items-center gap-0.5 shrink-0">
       <button type="button" className={`w-5 h-5 flex items-center justify-center rounded-[3px] ${animated ? 'text-accent' : 'text-faint hover:text-ink'}`}
         aria-label={animated ? 'Stop animating (stopwatch)' : 'Animate this property (stopwatch)'} aria-pressed={animated} data-tip={animated ? 'Stopwatch: animated' : 'Stopwatch: click to animate'}
-        onClick={(e) => { e.stopPropagation(); A.toggleStopwatch(layer.id, path); }}><LuTimer size={13} /></button>
+        onClick={(e) => { e.stopPropagation(); if (e.altKey) { A.setExpression(layer.id, path, prop.x === undefined ? 'value' : undefined); return; } A.toggleStopwatch(layer.id, path); }}><LuTimer size={13} /></button>
       {animated && (
         <span className="inline-flex items-center">
           <button type="button" className="w-3.5 h-5 text-[10px] text-muted hover:text-ink disabled:opacity-30" disabled={!prev} aria-label="Previous keyframe" onClick={(e) => { e.stopPropagation(); if (prev) setTime(prev.t); }}>◀</button>
@@ -137,6 +138,49 @@ export function PropLine({ layer, meta, t, fps, extra }: { layer: MLayer; meta: 
       <span className={`text-xs truncate min-w-0 cursor-default ${isGraph ? 'text-accent' : 'text-ink'}`} style={{ flex: '0 1 120px' }}
         onClick={() => useMotion.setState({ graphProp: { layerId: layer.id, path: meta.path } })}>{meta.label}</span>
       <div className="flex-1 min-w-0 flex items-center gap-1">{<PropValueEditor layer={layer} meta={meta} t={t} />}{extra}</div>
+      {meta.kind !== 'path' && <ExpressionButton layer={layer} path={meta.path} prop={prop} />}
     </div>
+  );
+}
+
+const EXPR_PRESETS: { label: string; x: string }[] = [
+  { label: 'Wiggle (shake)', x: 'wiggle(2, 30)' },
+  { label: 'Loop keyframes', x: 'loopOut("cycle")' },
+  { label: 'Ping-pong keyframes', x: 'loopOut("pingpong")' },
+  { label: 'Keep going after the last key', x: 'loopOut("continue")' },
+  { label: 'Turn with time', x: 'value + time * 90' },
+  { label: 'Pulse', x: 'value * (1 + 0.1 * Math.sin(time * 6))' },
+  { label: 'Fade in over 1 s', x: 'linear(time, 0, 1, 0, value)' },
+  { label: 'Random per frame', x: 'random(0, 100)' },
+];
+
+/** "=" button: the property's expression, like Alt-clicking the stopwatch in After Effects */
+export function ExpressionButton({ layer, path, prop }: { layer: MLayer; path: string; prop: Prop }) {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const has = prop.x !== undefined;
+  const err = has ? exprError(prop.x!) : null;
+  return (
+    <>
+      <button type="button" className={`w-5 h-5 shrink-0 rounded-[3px] text-[12px] font-bold leading-none ${has ? (prop.xOff ? 'text-faint line-through' : err ? 'text-[#ff6b6f]' : 'text-[#a78bfa] bg-accent-soft') : 'text-faint opacity-0 hover:opacity-100 focus:opacity-100'}`}
+        aria-label={has ? 'Edit expression' : 'Add expression'} data-tip={has ? (err ? `Expression error: ${err}` : 'Expression (Alt-click the stopwatch to remove)') : 'Add expression (Alt-click the stopwatch)'}
+        onClick={(e) => { e.stopPropagation(); if (!has) A.setExpression(layer.id, path, 'value'); setAnchor(e.currentTarget); }}>=</button>
+      {anchor && prop.x !== undefined && (
+        <Popover anchor={anchor} onClose={() => setAnchor(null)} placement="bottom-end">
+          <div className="menu p-2.5 flex flex-col gap-2 w-[340px]" onPointerDown={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2 text-xs"><span className="font-semibold text-ink-strong flex-1">Expression</span>
+              <label className="flex items-center gap-1 text-muted"><input type="checkbox" checked={!prop.xOff} onChange={(e) => A.setExpression(layer.id, path, prop.x, !e.target.checked)} />On</label>
+            </div>
+            <textarea autoFocus dir="ltr" spellCheck={false} className="field !h-auto min-h-[84px] py-1.5 font-mono text-[12px] leading-snug" value={prop.x} aria-label="Expression"
+              onChange={(e) => A.setExpression(layer.id, path, e.target.value, prop.xOff, `x-${layer.id}-${path}`)} onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Escape') setAnchor(null); }} />
+            {err ? <div className="text-2xs text-[#ff8a8d]">{`Error: ${err} — the keyframed value is used.`}</div> : <div className="text-2xs text-faint">time, value, wiggle(freq, amount), loopOut("cycle" | "pingpong" | "offset" | "continue"), linear(), ease(), random(), clamp(), add(), mul(), key(n), valueAtTime(t), thisComp.width…</div>}
+            <select className="field h-[24px] text-xs" value="" aria-label="Expression presets" onChange={(e) => { if (e.target.value) A.setExpression(layer.id, path, e.target.value); }}>
+              <option value="">Insert a ready expression…</option>
+              {EXPR_PRESETS.map((x) => <option key={x.x} value={x.x}>{x.label}</option>)}
+            </select>
+            <div className="flex justify-end"><button type="button" className="btn btn-danger h-[24px] text-xs" onClick={() => { A.setExpression(layer.id, path, undefined); setAnchor(null); }}>Remove expression</button></div>
+          </div>
+        </Popover>
+      )}
+    </>
   );
 }

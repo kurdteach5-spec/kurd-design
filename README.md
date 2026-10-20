@@ -1,4 +1,4 @@
-# KURD DESIGN
+# SARWAR DESIGN
 
 A layered image editor and graphic design tool that runs entirely in the browser. Photos, social graphics, posters, logos, thumbnails and print layouts — with non‑destructive adjustment layers, masks, editable text and vector shapes, PSD import/export, and local projects with crash recovery.
 
@@ -53,6 +53,10 @@ Click **Motion** at the top to switch from photo editing to the motion-graphics 
 - **Audio**: waveforms, volume (dB) keyframes, mute, fade in/out.
 - **Render**: MP4 (H.264 + AAC), WebM (VP9 + Opus, transparent where the browser supports it), GIF, PNG or JPEG sequence (.zip); size, fps, quality, bitrate, work area or whole composition. Video export uses WebCodecs (Chrome, Edge, recent Safari).
 - **Projects**: File › Save Project downloads a `.kdmotion` file with all media; the last session is also kept in browser storage (File › Restore Last Session). Undo/redo: Ctrl+Z / Ctrl+Shift+Z.
+
+## START SCREEN
+
+When the site opens it shows the four sections — **Design**, **Motion**, **Podcast** and **Mixer** — each with a picture of what it does, its main tools and an *Open* button (or press 1–4). The section used last is marked *Continue*. The logo in the top bar always brings you back; the switch at the bottom turns the start screen off. In Kurdish and Arabic the start screen reads right to left.
 
 ## PODCAST (automatic multicam editing)
 
@@ -153,3 +157,25 @@ Key design decisions:
 - GIF opens as its first frame. Very large images (over 16384 px on a side or ~134 MP) are scaled down on open with a notice.
 - Some browsers reserve Ctrl+N/W/T; Alt+N and Alt+W are provided, and every command is also in the menus.
 - Projects live in this browser's storage; use File › Download Project (.dps) for backups or moving between machines.
+
+
+### Start page style
+The start page (src/components/launcher/Launcher.tsx) is a dark landing page in the style of modern AI templates: pill navigation, violet/blue glows, glass cards, a format marquee, the four sections (keys 1–4), how it works, features, FAQ and a closing call. Animations stop when the system asks for reduced motion.
+
+### One section at a time
+Opening a section from the start page shows only that section. The header has an "All sections" button that goes back to the start page; there is no direct switch between sections. The whole app uses the start page's dark violet theme (tokens in src/index.css).
+
+### Motion: After Effects style
+- Layout like After Effects: Project / Effect Controls on the left, Composition viewer, stacked Info, Preview, Effects & Presets, Align and Properties panels on the right, Timeline and Render Queue tabs at the bottom.
+- Workspaces (Default, Animation, Effects, Minimal) and Snapping in the tools bar; Window menu.
+- Timeline: Toggle Switches / Modes (F4) shows Mode (blending) and TrkMat (track matte: alpha, alpha inverted, luma, luma inverted) columns. Track mattes render in src/motion/render/renderer.ts (drawMatted).
+- After Effects files (src/motion/import): Lottie / Bodymovin JSON is imported fully (layers, precomps, shapes, text, masks, mattes, parenting, keyframes with easing and motion paths). .aep (RIFX) and .aepx (XML) bring the project structure: compositions, layers, times, static transform values, text and footage linked by file name; keyframes inside .aep are not readable (format undocumented), the import report says so.
+
+### More After Effects features (Motion)
+- Expressions on any property (= button, or Alt-click the stopwatch): time, value, wiggle, loopOut/loopIn (cycle, pingpong, offset, continue), linear/ease, random, key(), valueAtTime… (src/motion/expr.ts). Bodymovin expressions ($bm_rt, $bm_sum…) run too.
+- Shape layers: linear/radial gradient fill and stroke, Repeater, Round Corners, Trim Offset. Layers: Time Remap, Auto-Orient, Skew.
+- Text animators with a Range Selector (Animate ▸ Opacity / Position / Scale / Rotation / Fill / Tracking; characters, words or lines; square, ramp, triangle, round, smooth).
+- Lottie import maps all of the above; .aep import now also tries the transform keyframes (validated record layout, otherwise reported) and the first shape of shape layers.
+
+### More Photoshop tools (Design)
+Quick Selection, Single Row / Column Marquee, Spot Healing Brush (content-aware fill + texture), History Brush (source chosen in the History panel), Sponge, Rotate View, Ruler; panels Navigator, Histogram, Info and Channels (load a channel as a selection). Code: src/tools/psTools.ts, src/components/panels/PsPanels.tsx.

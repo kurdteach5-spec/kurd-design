@@ -196,7 +196,7 @@ export const polygonLassoTool: Tool = {
     drawPolyline(ctx, engine, polyPts, engine.hover, false);
     if (polyPts.length > 2 && engine.hoverScreen) {
       const f = engine.docToScreen(polyPts[0]);
-      if (Math.hypot(f.x - engine.hoverScreen.x, f.y - engine.hoverScreen.y) < 8) { ctx.save(); ctx.strokeStyle = '#4f8cff'; ctx.beginPath(); ctx.arc(f.x, f.y, 6, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); }
+      if (Math.hypot(f.x - engine.hoverScreen.x, f.y - engine.hoverScreen.y) < 8) { ctx.save(); ctx.strokeStyle = '#7c5cff'; ctx.beginPath(); ctx.arc(f.x, f.y, 6, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); }
     }
   },
 };

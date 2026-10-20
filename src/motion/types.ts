@@ -1,4 +1,4 @@
-// KURD DESIGN · MOTION — data model.
+// SARWAR DESIGN · MOTION — data model.
 // A project holds compositions; a composition holds layers; any animatable property is a Prop:
 // a static value plus an optional list of keyframes. Everything is plain immutable data so the
 // whole project can be undone/redone and saved as JSON (assets are stored separately as blobs).
@@ -30,7 +30,13 @@ export interface Keyframe<T extends PropValue = PropValue> {
   si?: Vec2;
 }
 
-export interface Prop<T extends PropValue = PropValue> { v: T; k: Keyframe<T>[] }
+export interface Prop<T extends PropValue = PropValue> {
+  v: T; k: Keyframe<T>[];
+  /** expression (After Effects style); computed from time, value and helpers like wiggle() and loopOut() */
+  x?: string;
+  /** expression switched off (kept, not used) */
+  xOff?: boolean;
+}
 
 export type BlendMode =
   | 'normal' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten' | 'color-dodge' | 'color-burn'
@@ -47,6 +53,9 @@ export interface Transform {
   rotationY: Prop<number>;
   /** 0..100 */
   opacity: Prop<number>;
+  /** degrees of skew along the skew axis (degrees) */
+  skew?: Prop<number>;
+  skewAxis?: Prop<number>;
 }
 
 export type EffectParamValue = number | string | Vec2;
@@ -102,7 +111,15 @@ export interface LayerBase {
   masks: Mask[];
   /** effects switch (fx) */
   effectsOn: boolean;
+  /** Time Remap (seconds of the source at each composition time) for precomps and video */
+  timeRemap?: Prop<number> | null;
+  /** Auto-Orient: rotates the layer along its motion path */
+  autoOrient?: boolean;
+  /** track matte (TrkMat): another layer whose alpha or luminance shows this layer */
+  matte?: TrackMatte | null;
 }
+export type MatteMode = 'alpha' | 'alphaInv' | 'luma' | 'lumaInv';
+export interface TrackMatte { id: string; mode: MatteMode }
 
 export interface SolidLayer extends LayerBase { type: 'solid'; color: Prop<string>; width: number; height: number }
 export interface ImageLayer extends LayerBase { type: 'image'; assetId: string }
@@ -134,6 +151,19 @@ export interface TextData {
   shadowDistance: Prop<number>;
   shadowAngle: number;
   animator: { type: TextAnimatorType; progress: Prop<number>; offsetY: number; fade: boolean };
+  /** After Effects text animators: a range selector picks characters / words, the properties move them */
+  animators?: TextRangeAnimator[];
+}
+export interface TextRangeAnimator {
+  id: string; name: string;
+  basedOn: 'chars' | 'words' | 'lines';
+  shape: 'square' | 'rampUp' | 'rampDown' | 'triangle' | 'round' | 'smooth';
+  /** range selector, percent of the text */
+  start: Prop<number>; end: Prop<number>; offset: Prop<number>;
+  /** selector amount, percent */
+  amount?: Prop<number>;
+  position?: Prop<Vec2> | null; scale?: Prop<number> | null; rotation?: Prop<number> | null; opacity?: Prop<number> | null;
+  fill?: Prop<string> | null; tracking?: Prop<number> | null;
 }
 export interface TextLayer extends LayerBase { type: 'text'; text: TextData }
 
@@ -154,6 +184,23 @@ export interface ShapeData {
   /** trim paths, 0..100 % */
   trimStart: Prop<number>;
   trimEnd: Prop<number>;
+  /** trim offset in degrees (360 = once around) */
+  trimOffset?: Prop<number>;
+  /** Round Corners (px) for polygons, stars and straight paths */
+  roundCorners?: Prop<number>;
+  /** gradient instead of a flat fill / stroke colour */
+  fillGradient?: Gradient | null;
+  strokeGradient?: Gradient | null;
+  /** Repeater: copies of the shape, each moved by the repeater transform */
+  repeater?: Repeater | null;
+}
+export interface GradientStop { o: number; c: string; a: number }
+export interface Gradient { type: 'linear' | 'radial'; start: Prop<Vec2>; end: Prop<Vec2>; stops: GradientStop[] }
+export interface Repeater {
+  copies: Prop<number>; offset: Prop<number>;
+  anchor: Prop<Vec2>; position: Prop<Vec2>; scale: Prop<Vec2>; rotation: Prop<number>;
+  startOpacity: Prop<number>; endOpacity: Prop<number>;
+  composite: 'above' | 'below';
 }
 export interface ShapeLayer extends LayerBase { type: 'shape'; shape: ShapeData }
 

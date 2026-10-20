@@ -6,7 +6,7 @@ export type ToolId =
   | 'move' | 'marquee-rect' | 'marquee-ellipse' | 'lasso' | 'lasso-polygon' | 'magic-wand' | 'crop' | 'eyedropper'
   | 'brush' | 'pencil' | 'clone-stamp' | 'eraser' | 'paint-bucket' | 'gradient' | 'blur' | 'sharpen' | 'smudge'
   | 'dodge' | 'burn' | 'pen' | 'path-select' | 'text' | 'shape-rect' | 'shape-ellipse' | 'shape-polygon' | 'shape-line'
-  | 'hand' | 'zoom';
+  | 'hand' | 'zoom' | 'quick-select' | 'marquee-row' | 'marquee-col' | 'spot-heal' | 'history-brush' | 'sponge' | 'rotate-view' | 'ruler';
 
 export type SelectionMode = 'new' | 'add' | 'subtract' | 'intersect';
 
@@ -32,6 +32,10 @@ export interface ToolOptions {
   };
   pen: { mode: 'shape' | 'vector-mask' | 'selection' };
   zoom: { scrubby: boolean };
+  quick: { size: number };
+  heal: { size: number };
+  historyBrush: { size: number; hardness: number; opacity: number };
+  sponge: { size: number; hardness: number; flow: number; mode: 'desaturate' | 'saturate' };
 }
 
 export const defaultToolOptions = (): ToolOptions => ({
@@ -50,9 +54,13 @@ export const defaultToolOptions = (): ToolOptions => ({
   bucket: { tolerance: 32, contiguous: true, sampleAll: false, antiAlias: true, opacity: 1 },
   gradient: { type: 'linear', preset: 'fg-bg', reverse: false, opacity: 1, dither: true },
   text: defaultTextStyle(),
-  shape: { fill: '#4f8cff', fillEnabled: true, stroke: '#0b1220', strokeEnabled: false, strokeWidth: 4, radius: 0, sides: 6, star: false, innerRatio: 0.45, lineWidth: 6, arrowStart: false, arrowEnd: false },
+  shape: { fill: '#7c5cff', fillEnabled: true, stroke: '#0b1220', strokeEnabled: false, strokeWidth: 4, radius: 0, sides: 6, star: false, innerRatio: 0.45, lineWidth: 6, arrowStart: false, arrowEnd: false },
   pen: { mode: 'shape' },
   zoom: { scrubby: false },
+  quick: { size: 30 },
+  heal: { size: 30 },
+  historyBrush: { size: 40, hardness: 0.6, opacity: 1 },
+  sponge: { size: 60, hardness: 0.4, flow: 0.5, mode: 'desaturate' },
 });
 
 export interface ToolState {

@@ -8,7 +8,7 @@ import { useMotion } from '../store';
 type Entry = string | '-' | { label: string; items: Entry[] };
 
 const MENUS: { label: string; items: Entry[] }[] = [
-  { label: 'File', items: ['m.newProject', 'm.open', 'm.restore', '-', 'm.save', '-', 'm.import', '-', 'm.render', '-', 'm.design'] },
+  { label: 'File', items: ['m.newProject', 'm.open', 'm.restore', '-', 'm.save', '-', 'm.import', 'm.importAe', '-', 'm.render', '-', 'm.design'] },
   { label: 'Edit', items: ['m.undo', 'm.redo', '-', 'm.copy', 'm.paste', 'm.duplicate', 'm.split', 'm.delete', '-', 'm.selectAll', 'm.deselect', 'm.selectKeys'] },
   { label: 'Composition', items: ['m.newComp', 'm.compSettings', '-', 'm.precompose', '-', 'm.workIn', 'm.workOut', 'm.trimComp', '-', 'm.marker', 'm.motionBlur', '-', 'm.render'] },
   { label: 'Layer', items: [
@@ -25,6 +25,7 @@ const MENUS: { label: string; items: Entry[] }[] = [
     'm.autoBezier', 'm.linearPath', '-', 'm.selectKeys', 'm.revealTransform', 'm.revealAll', '-', 'm.fadeIn', 'm.fadeOut', 'm.savePreset', '-', 'm.prevKey', 'm.nextKey',
   ] },
   { label: 'View', items: ['m.zoomIn', 'm.zoomOut', 'm.fit', '-', 'm.qFull', 'm.qHalf', 'm.qQuarter', '-', 'm.grid', 'm.safe', 'm.paths', 'm.checker', '-', 'm.graph', 'm.tlZoomIn', 'm.tlZoomOut'] },
+  { label: 'Window', items: [{ label: 'Workspace', items: ['m.wsDefault', 'm.wsAnimation', 'm.wsEffects', 'm.wsMinimal'] }, '-', 'm.effectControls', 'm.modes', '-', { label: 'Align', items: ['m.alignLeft', 'm.alignHCenter', 'm.alignRight', '-', 'm.alignTop', 'm.alignVCenter', 'm.alignBottom'] }] },
   { label: 'Help', items: ['m.shortcuts'] },
 ];
 

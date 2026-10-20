@@ -6,6 +6,7 @@ import { marqueeRectTool, marqueeEllipseTool, lassoTool, polygonLassoTool, magic
 import { brushTool_, pencilTool, eraserTool, cloneStampTool, blurTool, sharpenTool, smudgeTool, dodgeTool, burnTool, eyedropperTool, paintBucketTool, gradientTool } from './paintTools';
 import { handTool, zoomTool, cropTool } from './navTools';
 import { textTool } from './textTool';
+import { quickSelectTool, marqueeRowTool, marqueeColTool, spotHealTool, historyBrush, spongeTool, rotateViewTool, rulerTool } from './psTools';
 import { rectShapeTool, ellipseShapeTool, polygonShapeTool, lineShapeTool, penTool, pathSelectTool } from './vectorTools';
 
 export const TOOLS: Record<ToolId, Tool> = {
@@ -37,6 +38,14 @@ export const TOOLS: Record<ToolId, Tool> = {
   'shape-line': lineShapeTool,
   'hand': handTool,
   'zoom': zoomTool,
+  'quick-select': quickSelectTool,
+  'marquee-row': marqueeRowTool,
+  'marquee-col': marqueeColTool,
+  'spot-heal': spotHealTool,
+  'history-brush': historyBrush,
+  'sponge': spongeTool,
+  'rotate-view': rotateViewTool,
+  'ruler': rulerTool,
 };
 
 registerToolResolver((id) => TOOLS[id as ToolId] ?? moveTool);
@@ -47,22 +56,24 @@ export interface ToolGroup { id: string; key?: string; tools: ToolMeta[] }
 /** Toolbox layout: grouped like a desktop editor; the group key cycles with Shift. */
 export const TOOL_GROUPS: ToolGroup[] = [
   { id: 'move', key: 'V', tools: [{ id: 'move', label: 'Move Tool' }] },
-  { id: 'marquee', key: 'M', tools: [{ id: 'marquee-rect', label: 'Rectangular Marquee' }, { id: 'marquee-ellipse', label: 'Elliptical Marquee' }] },
+  { id: 'marquee', key: 'M', tools: [{ id: 'marquee-rect', label: 'Rectangular Marquee' }, { id: 'marquee-ellipse', label: 'Elliptical Marquee' }, { id: 'marquee-row', label: 'Single Row Marquee' }, { id: 'marquee-col', label: 'Single Column Marquee' }] },
   { id: 'lasso', key: 'L', tools: [{ id: 'lasso', label: 'Lasso Tool' }, { id: 'lasso-polygon', label: 'Polygonal Lasso' }] },
-  { id: 'wand', key: 'W', tools: [{ id: 'magic-wand', label: 'Magic Wand' }] },
+  { id: 'wand', key: 'W', tools: [{ id: 'quick-select', label: 'Quick Selection Tool' }, { id: 'magic-wand', label: 'Magic Wand' }] },
   { id: 'crop', key: 'C', tools: [{ id: 'crop', label: 'Crop Tool' }] },
-  { id: 'eyedropper', key: 'I', tools: [{ id: 'eyedropper', label: 'Eyedropper' }] },
+  { id: 'eyedropper', key: 'I', tools: [{ id: 'eyedropper', label: 'Eyedropper' }, { id: 'ruler', label: 'Ruler Tool' }] },
+  { id: 'heal', key: 'J', tools: [{ id: 'spot-heal', label: 'Spot Healing Brush' }] },
   { id: 'brush', key: 'B', tools: [{ id: 'brush', label: 'Brush Tool' }, { id: 'pencil', label: 'Pencil Tool' }] },
   { id: 'clone', key: 'S', tools: [{ id: 'clone-stamp', label: 'Clone Stamp' }] },
+  { id: 'history', key: 'Y', tools: [{ id: 'history-brush', label: 'History Brush' }] },
   { id: 'eraser', key: 'E', tools: [{ id: 'eraser', label: 'Eraser Tool' }] },
   { id: 'fill', key: 'G', tools: [{ id: 'gradient', label: 'Gradient Tool' }, { id: 'paint-bucket', label: 'Paint Bucket' }] },
   { id: 'retouch', key: 'R', tools: [{ id: 'blur', label: 'Blur Tool' }, { id: 'sharpen', label: 'Sharpen Tool' }, { id: 'smudge', label: 'Smudge Tool' }] },
-  { id: 'tone', key: 'O', tools: [{ id: 'dodge', label: 'Dodge Tool' }, { id: 'burn', label: 'Burn Tool' }] },
+  { id: 'tone', key: 'O', tools: [{ id: 'dodge', label: 'Dodge Tool' }, { id: 'burn', label: 'Burn Tool' }, { id: 'sponge', label: 'Sponge Tool' }] },
   { id: 'pen', key: 'P', tools: [{ id: 'pen', label: 'Pen Tool' }] },
   { id: 'text', key: 'T', tools: [{ id: 'text', label: 'Text Tool' }] },
   { id: 'path', key: 'A', tools: [{ id: 'path-select', label: 'Path Selection' }] },
   { id: 'shape', key: 'U', tools: [{ id: 'shape-rect', label: 'Rectangle Tool' }, { id: 'shape-ellipse', label: 'Ellipse Tool' }, { id: 'shape-polygon', label: 'Polygon Tool' }, { id: 'shape-line', label: 'Line Tool' }] },
-  { id: 'hand', key: 'H', tools: [{ id: 'hand', label: 'Hand Tool' }] },
+  { id: 'hand', key: 'H', tools: [{ id: 'hand', label: 'Hand Tool' }, { id: 'rotate-view', label: 'Rotate View Tool' }] },
   { id: 'zoom', key: 'Z', tools: [{ id: 'zoom', label: 'Zoom Tool' }] },
 ];
 

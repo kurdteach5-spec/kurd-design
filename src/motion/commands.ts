@@ -2,7 +2,7 @@
 import * as A from './actions';
 import { useMotion, mundo, mredo, activeComp, compTime, setTime, setAutoKey, type MotionTool } from './store';
 import { togglePlay, stop, pause } from './media/playback';
-import { openMotionDialog, useMotionUI } from './uiState';
+import { openMotionDialog, useMotionUI, setAeWorkspace } from './uiState';
 import { newProject, openProjectFile, saveProjectFile, restoreLast } from './project';
 import { EFFECT_CATEGORIES, EFFECT_DEFS } from './render/effectDefs';
 import { applyPreset } from './presets';
@@ -11,7 +11,7 @@ import { mcommit, updateComp } from './store';
 import { isEditable } from '../shortcuts/keyboard';
 import { isMac } from '../utils/id';
 import { toast } from '../state/uiStore';
-import { isMotion, setWorkspace } from '../state/workspace';
+import { isMotion, openLauncher } from '../state/workspace';
 import type { MLayer } from './types';
 
 export interface MCommand { id: string; label: string; shortcut?: string; run: () => void; enabled?: () => boolean; checked?: () => boolean }
@@ -27,7 +27,8 @@ function pickFiles(accept: string, multiple = true): Promise<File[]> {
     i.onchange = () => res([...(i.files ?? [])]); i.click();
   });
 }
-export const importDialog = async () => { const f = await pickFiles('video/*,audio/*,image/*,.mov,.mkv,.m4a,.flac'); if (f.length) await A.importFiles(f); };
+export const importDialog = async () => { const f = await pickFiles('video/*,audio/*,image/*,.mov,.mkv,.m4a,.flac,.aep,.aepx,.json'); if (f.length) await A.importFiles(f); };
+export const importAeDialog = async () => { const f = await pickFiles('.aep,.aepx,.json,video/*,audio/*,image/*,.mov,.mkv'); if (f.length) await A.importFiles(f); };
 export const openProjectDialog = async () => { const f = await pickFiles('.kdmotion,.zip', false); if (f[0]) await openProjectFile(f[0]); };
 
 let layerClipboard: MLayer[] | null = null;
@@ -67,8 +68,9 @@ const add = (c: MCommand) => MCOMMANDS.set(c.id, c);
   { id: 'm.restore', label: 'Restore Last Session', run: () => void restoreLast() },
   { id: 'm.save', label: 'Save Project', shortcut: 'Mod+S', run: () => void saveProjectFile() },
   { id: 'm.import', label: 'Import File…', shortcut: 'Mod+I', run: () => void importDialog() },
-  { id: 'm.render', label: 'Render / Export…', shortcut: 'Mod+M', run: () => useMotionUI.setState({ rightTab: 'render' }), enabled: hasComp },
-  { id: 'm.design', label: 'Switch to Design', run: () => { pause(); setWorkspace('design'); } },
+  { id: 'm.importAe', label: 'Open After Effects Project / Lottie…', run: () => void importAeDialog() },
+  { id: 'm.render', label: 'Render / Export…', shortcut: 'Mod+M', run: () => useMotionUI.setState({ bottomTab: 'render' }), enabled: hasComp },
+  { id: 'm.design', label: 'All Sections (Start Page)', run: () => { pause(); openLauncher(); } },
   // edit
   { id: 'm.undo', label: 'Undo', shortcut: 'Mod+Z', run: mundo, enabled: () => useMotion.getState().past.length > 0 },
   { id: 'm.redo', label: 'Redo', shortcut: 'Mod+Shift+Z', run: mredo, enabled: () => useMotion.getState().future.length > 0 },
@@ -161,6 +163,18 @@ const add = (c: MCommand) => MCOMMANDS.set(c.id, c);
   { id: 'm.graph', label: 'Graph Editor', shortcut: 'Shift+F3', run: () => useMotion.setState((s) => ({ timeline: { ...s.timeline, graph: !s.timeline.graph } })), checked: () => useMotion.getState().timeline.graph },
   { id: 'm.tlZoomIn', label: 'Zoom Timeline In', shortcut: '=', run: () => useMotion.setState((s) => ({ timeline: { ...s.timeline, pxPerSec: Math.min(4000, s.timeline.pxPerSec * 1.4) } })) },
   { id: 'm.tlZoomOut', label: 'Zoom Timeline Out', shortcut: '-', run: () => useMotion.setState((s) => ({ timeline: { ...s.timeline, pxPerSec: Math.max(4, s.timeline.pxPerSec / 1.4) } })) },
+  { id: 'm.modes', label: 'Toggle Switches / Modes', shortcut: 'F4', run: () => useMotionUI.setState((s) => ({ modesColumn: !s.modesColumn })), checked: () => useMotionUI.getState().modesColumn },
+  { id: 'm.alignLeft', label: 'Align Left', run: () => A.alignLayers('left'), enabled: hasSel },
+  { id: 'm.alignHCenter', label: 'Align Horizontal Center', run: () => A.alignLayers('hcenter'), enabled: hasSel },
+  { id: 'm.alignRight', label: 'Align Right', run: () => A.alignLayers('right'), enabled: hasSel },
+  { id: 'm.alignTop', label: 'Align Top', run: () => A.alignLayers('top'), enabled: hasSel },
+  { id: 'm.alignVCenter', label: 'Align Vertical Center', run: () => A.alignLayers('vcenter'), enabled: hasSel },
+  { id: 'm.alignBottom', label: 'Align Bottom', run: () => A.alignLayers('bottom'), enabled: hasSel },
+  { id: 'm.wsDefault', label: 'Default', run: () => setAeWorkspace('default'), checked: () => useMotionUI.getState().aeWorkspace === 'default' },
+  { id: 'm.wsAnimation', label: 'Animation', run: () => setAeWorkspace('animation'), checked: () => useMotionUI.getState().aeWorkspace === 'animation' },
+  { id: 'm.wsEffects', label: 'Effects', run: () => setAeWorkspace('effects'), checked: () => useMotionUI.getState().aeWorkspace === 'effects' },
+  { id: 'm.wsMinimal', label: 'Minimal', run: () => setAeWorkspace('minimal'), checked: () => useMotionUI.getState().aeWorkspace === 'minimal' },
+  { id: 'm.effectControls', label: 'Effect Controls', shortcut: 'F3', run: () => useMotionUI.setState({ leftTab: 'effectControls' }) },
   { id: 'm.shortcuts', label: 'Keyboard Shortcuts', run: () => openMotionDialog({ type: 'shortcuts' }) },
   // tools
   { id: 'm.tool.select', label: 'Selection Tool', shortcut: 'V', run: tool('select') },

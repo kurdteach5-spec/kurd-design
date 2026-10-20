@@ -329,7 +329,7 @@ function tri(x: CanvasRenderingContext2D, img: HTMLCanvasElement, s0: Point, s1:
 }
 
 /** Draws the transform box and handles in screen space. */
-export function drawTransformBox(ctx: CanvasRenderingContext2D, engine: Engine, s: TransformSession, accent = '#4f8cff') {
+export function drawTransformBox(ctx: CanvasRenderingContext2D, engine: Engine, s: TransformSession, accent = '#7c5cff') {
   const q = s.corners.map((p) => engine.docToScreen(p));
   ctx.save();
   ctx.strokeStyle = accent; ctx.lineWidth = 1;

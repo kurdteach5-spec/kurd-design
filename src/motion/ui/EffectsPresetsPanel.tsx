@@ -18,7 +18,7 @@ export function EffectsPresetsPanel() {
     const isOpen = !!q || !!open[k];
     return (
       <div>
-        <button type="button" className="w-full flex items-center gap-1.5 h-[26px] px-2 text-xs text-ink hover:bg-[#282d33]" aria-expanded={isOpen} onClick={() => toggle(k)}>
+        <button type="button" className="w-full flex items-center gap-1.5 h-[26px] px-2 text-xs text-ink hover:bg-[#1d1d2d]" aria-expanded={isOpen} onClick={() => toggle(k)}>
           <LuChevronRight size={12} className={`transition-transform text-muted ${isOpen ? 'rotate-90' : ''}`} />{icon}<span className="flex-1 text-start">{label}</span><span className="text-faint text-2xs num">{count}</span>
         </button>
         {isOpen && <div className="pb-1">{children}</div>}
@@ -26,14 +26,14 @@ export function EffectsPresetsPanel() {
     );
   };
   const Item = ({ label, tip, onApply }: { label: string; tip: string; onApply: () => void }) => (
-    <button type="button" className="w-full text-start flex items-center h-[24px] ps-8 pe-2 text-xs text-muted hover:text-ink hover:bg-[#2b3037]" data-tip={tip} onClick={onApply}>{label}</button>
+    <button type="button" className="w-full text-start flex items-center h-[24px] ps-8 pe-2 text-xs text-muted hover:text-ink hover:bg-[#1f1f31]" data-tip={tip} onClick={onApply}>{label}</button>
   );
   return (
     <div className="h-full flex flex-col min-h-0">
       <div className="p-2 border-b border-line-soft">
         <div className="relative">
-          <LuSearch size={13} className="absolute left-2 top-1/2 -translate-y-1/2 text-faint" />
-          <input className="field w-full ps-7" placeholder="Search effects & presets" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.stopPropagation()} aria-label="Search effects and presets" />
+          <LuSearch size={13} className="absolute start-2 top-1/2 -translate-y-1/2 text-faint" />
+          <input className="field w-full" style={{ paddingInlineStart: 26 }} placeholder="Search effects & presets" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.stopPropagation()} aria-label="Search effects and presets" />
         </div>
         <div className="text-2xs text-faint mt-1.5">{selCount ? (selCount === 1 ? 'Click to apply to the selected layer.' : `Click to apply to ${selCount} selected layers.`) : 'Select a layer, then click an effect or preset.'}</div>
       </div>

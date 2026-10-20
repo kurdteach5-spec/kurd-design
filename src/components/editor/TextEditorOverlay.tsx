@@ -67,7 +67,7 @@ export function TextEditorOverlay() {
         textTransform: style.transform,
         whiteSpace: boxWidth ? 'pre-wrap' : 'pre',
         color: 'transparent',
-        caretColor: '#4f8cff',
+        caretColor: '#7c5cff',
         outline: 'none',
         zIndex: 5,
       }}

@@ -48,7 +48,7 @@ export function Dialog({ title, children, onClose, onSubmit, footer, width = 440
     <div className={`fixed inset-0 z-[800] flex items-center justify-center ${nonModal ? 'pointer-events-none' : 'bg-black/45'}`}
       onPointerDown={(e) => { if (e.target === e.currentTarget && !nonModal) onClose(); }}>
       <div ref={ref} role="dialog" aria-modal={!nonModal} aria-label={title} tabIndex={-1}
-        className="pointer-events-auto bg-panel border border-[#434a54] rounded-[8px] shadow-[0_24px_64px_rgba(0,0,0,.55)] flex flex-col max-h-[90vh] max-w-[96vw]"
+        className="pointer-events-auto bg-panel border border-[#33334e] rounded-[8px] shadow-[0_24px_64px_rgba(0,0,0,.55)] flex flex-col max-h-[90vh] max-w-[96vw]"
         style={{ width, animation: 'menu-in 120ms ease-out', transform: `translate(${off.x}px, ${off.y}px)` }}
         onKeyDown={(e) => {
           e.stopPropagation();

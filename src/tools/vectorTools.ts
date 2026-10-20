@@ -95,7 +95,7 @@ function drawPath(ctx: CanvasRenderingContext2D, engine: Engine, nodes: PathNode
   const p = nodesPath(nodes, closed);
   ctx.restore();
   ctx.save(); ctx.setTransform(engine.dpr * vm.a, engine.dpr * vm.b, engine.dpr * vm.c, engine.dpr * vm.d, engine.dpr * vm.e, engine.dpr * vm.f);
-  ctx.lineWidth = 1.5 / (engine.zoom * Math.hypot(m.a, m.b)); ctx.strokeStyle = '#4f8cff'; ctx.stroke(p); ctx.restore();
+  ctx.lineWidth = 1.5 / (engine.zoom * Math.hypot(m.a, m.b)); ctx.strokeStyle = '#7c5cff'; ctx.stroke(p); ctx.restore();
   for (let i = 0; i < nodes.length; i++) {
     const n = nodes[i];
     const s = engine.docToScreen(apply(m, n));
@@ -103,11 +103,11 @@ function drawPath(ctx: CanvasRenderingContext2D, engine: Engine, nodes: PathNode
       for (const h of [{ x: n.inX, y: n.inY }, { x: n.outX, y: n.outY }]) {
         if (h.x === n.x && h.y === n.y) continue;
         const hs = engine.docToScreen(apply(m, h));
-        ctx.strokeStyle = '#4f8cff'; ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(hs.x, hs.y); ctx.stroke();
-        ctx.fillStyle = '#4f8cff'; ctx.beginPath(); ctx.arc(hs.x, hs.y, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#7c5cff'; ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(hs.x, hs.y); ctx.stroke();
+        ctx.fillStyle = '#7c5cff'; ctx.beginPath(); ctx.arc(hs.x, hs.y, 3, 0, Math.PI * 2); ctx.fill();
       }
     }
-    ctx.fillStyle = selected === i ? '#4f8cff' : '#fff'; ctx.strokeStyle = '#4f8cff';
+    ctx.fillStyle = selected === i ? '#7c5cff' : '#fff'; ctx.strokeStyle = '#7c5cff';
     ctx.fillRect(s.x - 3.5, s.y - 3.5, 7, 7); ctx.strokeRect(s.x - 3.5, s.y - 3.5, 7, 7);
   }
   ctx.restore();

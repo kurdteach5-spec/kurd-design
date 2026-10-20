@@ -181,7 +181,7 @@ const list: Command[] = [
   { id: 'view.gridSettings', label: 'Grid Settings…', run: () => openDialog({ type: 'grid-settings' }) },
 
   // Window
-  ...(['layers', 'properties', 'color', 'swatches', 'history', 'adjustments', 'brush', 'character', 'paragraph'] as PanelId[]).map((p) => ({
+  ...(['layers', 'properties', 'color', 'swatches', 'history', 'adjustments', 'brush', 'character', 'paragraph', 'navigator', 'histogram', 'info', 'channels'] as PanelId[]).map((p) => ({
     id: `window.${p}`, label: p[0].toUpperCase() + p.slice(1), run: () => { if (ui().hiddenPanels.includes(p)) togglePanelVisible(p); focusPanel(p); }, checked: () => !ui().hiddenPanels.includes(p),
   } as Command)),
   { id: 'window.docked', label: 'Docked Panels', run: () => useUI.setState((s) => ({ sidebarMode: s.sidebarMode === 'docked' ? 'rail' : 'docked', floatingGroup: null })), checked: () => ui().sidebarMode === 'docked' },
@@ -189,7 +189,7 @@ const list: Command[] = [
 
   // Help
   { id: 'help.shortcuts', label: 'Keyboard Shortcuts', run: () => openDialog({ type: 'shortcuts' }) },
-  { id: 'help.about', label: 'About KURD DESIGN', run: () => openDialog({ type: 'about' }) },
+  { id: 'help.about', label: 'About SARWAR DESIGN', run: () => openDialog({ type: 'about' }) },
 
   // Tool / misc (keyboard only)
   { id: 'colors.swap', label: 'Swap Colors', shortcut: 'X', run: swapColors },

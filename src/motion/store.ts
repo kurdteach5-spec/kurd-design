@@ -150,6 +150,11 @@ export function getProp(l: MLayer, path: string): Prop | null {
     const m = l.masks.find((x) => x.id === id);
     return m ? ((m as unknown as Record<string, Prop>)[key] ?? null) : null;
   }
+  if (path.startsWith('tanim:')) {
+    const [id, key] = path.slice(6).split('.');
+    const a = l.type === 'text' ? l.text.animators?.find((x) => x.id === id) : null;
+    return a ? ((a as unknown as Record<string, Prop | null>)[key] ?? null) : null;
+  }
   let o: unknown = l;
   for (const part of path.split('.')) { if (!o || typeof o !== 'object') return null; o = (o as Record<string, unknown>)[part]; }
   return o && typeof o === 'object' && 'k' in (o as object) && 'v' in (o as object) ? (o as Prop) : null;
@@ -164,6 +169,11 @@ export function setProp(l: MLayer, path: string, p: Prop): MLayer {
     const [id, key] = path.slice(5).split('.');
     return { ...l, masks: l.masks.map((m) => (m.id === id ? { ...m, [key]: p } : m)) };
   }
+  if (path.startsWith('tanim:')) {
+    const [id, key] = path.slice(6).split('.');
+    if (l.type !== 'text') return l;
+    return { ...l, text: { ...l.text, animators: (l.text.animators ?? []).map((a) => (a.id === id ? { ...a, [key]: p } : a)) } };
+  }
   const parts = path.split('.');
   const set = (o: Record<string, unknown>, i: number): Record<string, unknown> => ({ ...o, [parts[i]]: i === parts.length - 1 ? p : set(o[parts[i]] as Record<string, unknown>, i + 1) });
   return set(l as unknown as Record<string, unknown>, 0) as unknown as MLayer;
@@ -171,12 +181,15 @@ export function setProp(l: MLayer, path: string, p: Prop): MLayer {
 
 /** All animatable property paths of a layer, for keyframe operations. */
 export function allPropPaths(l: MLayer): string[] {
-  const out = ['transform.anchor', 'transform.position', 'transform.scale', 'transform.rotation', 'transform.rotationX', 'transform.rotationY', 'transform.opacity'];
+  const out = ['transform.anchor', 'transform.position', 'transform.scale', 'transform.rotation', 'transform.rotationX', 'transform.rotationY', 'transform.opacity', 'transform.skew', 'transform.skewAxis', 'timeRemap'];
   if (l.type === 'solid') out.push('color');
   if (l.type === 'video' || l.type === 'audio') out.push('volume');
   if (l.type === 'camera') out.push('zoom');
   if (l.type === 'text') out.push('text.size', 'text.color', 'text.tracking', 'text.leading', 'text.strokeColor', 'text.strokeWidth', 'text.shadowColor', 'text.shadowBlur', 'text.shadowDistance', 'text.animator.progress');
-  if (l.type === 'shape') out.push('shape.size', 'shape.roundness', 'shape.innerRadius', 'shape.path', 'shape.fill', 'shape.stroke', 'shape.strokeWidth', 'shape.trimStart', 'shape.trimEnd');
+  if (l.type === 'shape') out.push('shape.size', 'shape.roundness', 'shape.innerRadius', 'shape.path', 'shape.fill', 'shape.stroke', 'shape.strokeWidth', 'shape.trimStart', 'shape.trimEnd', 'shape.trimOffset', 'shape.roundCorners',
+    'shape.fillGradient.start', 'shape.fillGradient.end', 'shape.strokeGradient.start', 'shape.strokeGradient.end',
+    ...['copies', 'offset', 'anchor', 'position', 'scale', 'rotation', 'startOpacity', 'endOpacity'].map((k) => `shape.repeater.${k}`));
+  if (l.type === 'text') for (const a of l.text.animators ?? []) for (const k of ['start', 'end', 'offset', 'amount', 'position', 'scale', 'rotation', 'opacity', 'fill', 'tracking']) out.push(`tanim:${a.id}.${k}`);
   for (const m of l.masks) out.push(`mask:${m.id}.path`, `mask:${m.id}.feather`, `mask:${m.id}.opacity`, `mask:${m.id}.expansion`);
   for (const e of l.effects) for (const k of Object.keys(e.params)) out.push(`fx:${e.id}.${k}`);
   return out;

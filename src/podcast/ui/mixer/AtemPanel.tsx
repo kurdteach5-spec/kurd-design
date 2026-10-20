@@ -147,7 +147,7 @@ export function AtemPanel() {
         <div className="rounded-[18px] bg-gradient-to-b from-[#1e1e20] to-[#121213] px-5 pt-2.5 pb-3.5 flex flex-col gap-2.5" dir="ltr">
           {/* name plate, record and render */}
           <div className="flex items-center gap-3">
-            <div className="text-[15px] text-[#f1f1f1] tracking-[0.01em] whitespace-nowrap"><span className="font-semibold">KURD</span> <span className="font-light">Mixer Pro</span></div>
+            <div className="text-[15px] text-[#f1f1f1] tracking-[0.01em] whitespace-nowrap"><span className="font-semibold">SARWAR</span> <span className="font-light">Mixer Pro</span></div>
             <S lit={audio ? 'white' : 'off'} w={50} label={audio ? 'Hide the audio buttons (slimmer panel)' : 'Show the audio buttons'} onClick={() => setAudio(!audio)}>AUDIO</S>
             <div className="flex-1" />
             <div className="flex items-center gap-1 text-[8px] font-bold text-[#c9cacc]"><span className={`w-[6px] h-[6px] rounded-[1px] ${playing ? 'bg-[#ff3b30] shadow-[0_0_6px_#ff3b30]' : 'bg-[#5a1a17]'}`} />LIVE</div>

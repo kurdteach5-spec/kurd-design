@@ -232,7 +232,7 @@ function buildReport(range: { start: number; end: number }, segs: Segment[], st:
   const stats = editStats(segs, an);
   const pc = (v: number) => `${((v ?? 0) * 100).toFixed(1)} %`;
   const L: string[] = [];
-  L.push(`MULTICAM EDIT REPORT — ${baseName()}`, 'Made with KURD DESIGN · Podcast', '');
+  L.push(`MULTICAM EDIT REPORT — ${baseName()}`, 'Made with SARWAR DESIGN · Podcast', '');
   L.push('CAMERAS');
   for (const c of s.cameras) {
     const src = s.sources[c.id]; const conf = an?.syncConfidence[c.id];
