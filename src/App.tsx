@@ -22,7 +22,9 @@ import { MotionWorkspace } from './motion/ui/MotionWorkspace';
 import { MotionMenuBar } from './motion/ui/MotionMenuBar';
 import { importFiles as importMotionFiles } from './motion/actions';
 import { pause as pauseMotion } from './motion/media/playback';
-import { LuImage, LuClapperboard, LuPodcast, LuSlidersVertical, LuLayoutGrid } from 'react-icons/lu';
+import { LuImage, LuClapperboard, LuPodcast, LuSlidersVertical, LuLayoutGrid, LuAudioLines } from 'react-icons/lu';
+import { LibraryWorkspace } from './library/ui/LibraryWorkspace';
+import { stopLibrary } from './library/audio';
 import { useUI } from './state/uiStore';
 import { useDocuments } from './state/documentStore';
 import { installKeyboard } from './shortcuts/keyboard';
@@ -36,6 +38,7 @@ const WORKSPACES = [
   { id: 'motion', label: 'Motion', short: 'Motion', color: '#2fae9c', Icon: LuClapperboard, tip: 'Motion graphics, animation & video' },
   { id: 'podcast', label: 'Podcast', short: 'Podcast', color: '#e2674f', Icon: LuPodcast, tip: 'Multicam podcast & interview editing' },
   { id: 'mixer', label: 'Vision Mixer', short: 'Mixer', color: '#7d9aff', Icon: LuSlidersVertical, tip: 'Live vision mixer (switcher) for the podcast cameras' },
+  { id: 'library', label: 'Sound Library', short: 'Sounds', color: '#ff8a1f', Icon: LuAudioLines, tip: 'Background music and sound effects' },
 ] as const;
 
 export function App() {
@@ -85,13 +88,13 @@ export function App() {
   return (
     <div className="h-full grid" style={{ gridTemplateRows: '34px 36px minmax(0, 1fr) 24px', gridTemplateColumns: 'minmax(0, 1fr)' }}>
       <header className="flex items-center gap-1 sm:gap-2 px-1.5 sm:px-2 bg-panel border-b border-line min-w-0 overflow-hidden">
-        <button type="button" className="flex items-center gap-2 pe-1 xl:pe-2 shrink-0" onClick={() => { pauseMotion(); stopPodcast(); openLauncher(); }} aria-label="SARWAR DESIGN start screen" data-tip="Start screen: all sections">
+        <button type="button" className="flex items-center gap-2 pe-1 xl:pe-2 shrink-0" onClick={() => { pauseMotion(); stopPodcast(); stopLibrary(); openLauncher(); }} aria-label="SARWAR DESIGN start screen" data-tip="Start screen: all sections">
           <Logo size={20} /><span className="font-bold text-ink-strong hidden xl:inline tracking-[0.06em] whitespace-nowrap">SARWAR <span className="text-accent">DESIGN</span></span>
         </button>
         {(() => { const w = WORKSPACES.find((x) => x.id === mode)!; return (
           <>
             <button type="button" className="h-[24px] px-2.5 rounded-full text-xs inline-flex items-center gap-1.5 shrink-0 border border-line text-muted hover:text-ink hover:bg-hover"
-              onClick={() => { pauseMotion(); stopPodcast(); openLauncher(); }} data-tip="Back to the start page to open another section" aria-label="All sections">
+              onClick={() => { pauseMotion(); stopPodcast(); stopLibrary(); openLauncher(); }} data-tip="Back to the start page to open another section" aria-label="All sections">
               <LuLayoutGrid size={13} /><span className="hidden sm:inline">All sections</span>
             </button>
             <span className="h-[24px] px-2.5 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 shrink-0 mx-1" style={{ background: `${w.color}22`, color: w.color, boxShadow: `inset 0 0 0 1px ${w.color}55` }} aria-label={`Section: ${w.label}`}>
@@ -99,10 +102,10 @@ export function App() {
             </span>
           </>
         ); })()}
-        <div className="h-full py-[3px] min-w-0 flex-1 overflow-x-auto overflow-y-hidden no-scrollbar">{mode === 'motion' ? <MotionMenuBar /> : mode === 'podcast' ? <div className="h-full hidden md:flex items-center px-2 text-xs text-muted whitespace-nowrap">Multicam podcast editor · automatic cuts</div> : mode === 'mixer' ? <div className="h-full hidden md:flex items-center px-2 text-xs text-muted whitespace-nowrap">Vision mixer · live switching, keys, SuperSource, multiview</div> : <MenuBar />}</div>
+        <div className="h-full py-[3px] min-w-0 flex-1 overflow-x-auto overflow-y-hidden no-scrollbar">{mode === 'motion' ? <MotionMenuBar /> : mode === 'podcast' ? <div className="h-full hidden md:flex items-center px-2 text-xs text-muted whitespace-nowrap">Multicam podcast editor · automatic cuts</div> : mode === 'mixer' ? <div className="h-full hidden md:flex items-center px-2 text-xs text-muted whitespace-nowrap">Vision mixer · live switching, keys, SuperSource, multiview</div> : mode === 'library' ? <div className="h-full hidden md:flex items-center px-2 text-xs text-muted whitespace-nowrap">Background music & sound effects · preview, search, download</div> : <MenuBar />}</div>
         <div className="h-full shrink-0"><LanguageMenu /></div>
       </header>
-      {mode === 'podcast' ? <div className="min-h-0 min-w-0" style={{ gridRow: '2 / 5' }}><PodcastWorkspace /></div> : mode === 'mixer' ? <div className="min-h-0 min-w-0" style={{ gridRow: '2 / 5' }}><MixerWorkspace /></div> : mode === 'motion' ? <div className="min-h-0 min-w-0" style={{ gridRow: '2 / 5' }}><MotionWorkspace /></div> : <>
+      {mode === 'library' ? <div className="min-h-0 min-w-0" style={{ gridRow: '2 / 5' }}><ErrorBoundary label="sound library"><LibraryWorkspace /></ErrorBoundary></div> : mode === 'podcast' ? <div className="min-h-0 min-w-0" style={{ gridRow: '2 / 5' }}><PodcastWorkspace /></div> : mode === 'mixer' ? <div className="min-h-0 min-w-0" style={{ gridRow: '2 / 5' }}><MixerWorkspace /></div> : mode === 'motion' ? <div className="min-h-0 min-w-0" style={{ gridRow: '2 / 5' }}><MotionWorkspace /></div> : <>
       <div className="bg-panel border-b border-line min-w-0 overflow-x-auto overflow-y-hidden no-scrollbar">
         {home ? <div className="h-full flex items-center px-3 text-muted">Create or open a document to start editing.</div> : <ErrorBoundary label="options bar"><OptionsBar /></ErrorBoundary>}
       </div>

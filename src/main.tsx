@@ -30,6 +30,7 @@ window.addEventListener('unhandledrejection', (e) => {
   motion: () => useMotion.getState(),
   podcast: () => usePod.getState(),
   podcastSet: (p: Record<string, unknown>) => usePod.setState(p),
+  library: () => import('./library/audio').then((a) => import('./library/store').then((st) => ({ audio: a, store: st }))),
   history: () => { const s = useDocuments.getState(); const d = s.activeId ? s.docs[s.activeId] : null; return d ? { labels: d.history.map((h) => h.label), index: d.historyIndex } : null; },
 };
 

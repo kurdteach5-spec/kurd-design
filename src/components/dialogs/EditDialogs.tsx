@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useId } from 'react';
 import { Dialog, Row } from './Dialog';
 import { closeDialog, openDialog, toast, toastError, useUI, type DialogDescriptor } from '../../state/uiStore';
 import { filterById, defaultParams } from '../../filters/definitions';
@@ -334,11 +334,22 @@ export function AboutDialog() {
 }
 
 export function Logo({ size = 22 }: { size?: number }) {
+  const id = useId().replace(/:/g, '');
+  const u = (k: string) => `url(#${id}${k})`;
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden>
-      <rect width="32" height="32" rx="7" fill="#2c3138" />
-      <path d="M21 9.6c-1.2-1.7-3-2.6-5.2-2.6-3 0-5.3 1.8-5.3 4.4 0 5.7 11 3.1 11 9 0 2.8-2.4 4.6-5.7 4.6-2.4 0-4.5-1-5.8-2.8" fill="none" stroke="#7c5cff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="24" cy="9" r="3" fill="#ffb547" />
+    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden style={{ flexShrink: 0 }}>
+      <defs>
+        <linearGradient id={`${id}a`} x1="44" y1="10" x2="24" y2="33" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#22d3ee" /><stop offset=".5" stopColor="#3b82f6" /><stop offset="1" stopColor="#8b5cf6" /></linearGradient>
+        <linearGradient id={`${id}b`} x1="34" y1="31" x2="20" y2="55" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#d946ef" /><stop offset=".55" stopColor="#f43f5e" /><stop offset="1" stopColor="#fb923c" /></linearGradient>
+        <linearGradient id={`${id}s`} x1="32" y1="32" x2="42" y2="38" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#14062e" stopOpacity=".6" /><stop offset="1" stopColor="#14062e" stopOpacity="0" /></linearGradient>
+        <linearGradient id={`${id}g`} x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#1e1846" /><stop offset="1" stopColor="#0b0a1f" /></linearGradient>
+      </defs>
+      <rect width="64" height="64" rx="16" fill={u('g')} />
+      <rect x=".5" y=".5" width="63" height="63" rx="15.5" fill="none" stroke="#fff" strokeOpacity=".09" />
+      <path d="M32 32A10.5 10.5 0 1 1 22.91 47.75" fill="none" stroke={u('b')} strokeWidth="10.5" strokeLinecap="round" />
+      <path d="M32 32A10.5 10.5 0 0 1 40.6 36.48" fill="none" stroke={u('s')} strokeWidth="10.5" />
+      <path d="M41.09 16.25A10.5 10.5 0 1 0 32 32" fill="none" stroke={u('a')} strokeWidth="10.5" strokeLinecap="round" />
+      <circle cx="50.5" cy="10.5" r="3" fill="#fde047" />
     </svg>
   );
 }

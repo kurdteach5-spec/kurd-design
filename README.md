@@ -179,3 +179,10 @@ Opening a section from the start page shows only that section. The header has an
 
 ### More Photoshop tools (Design)
 Quick Selection, Single Row / Column Marquee, Spot Healing Brush (content-aware fill + texture), History Brush (source chosen in the History panel), Sponge, Rotate View, Ruler; panels Navigator, Histogram, Info and Channels (load a channel as a selection). Code: src/tools/psTools.ts, src/components/panels/PsPanels.tsx.
+
+### Sound Library (5th section)
+Background music (28 categories) and sound effects (17 categories) with waveform previews, search (also in Kurdish / Arabic), filters (type, category, mood, genre, length, BPM, licence), sort (recently added, most played on this device), favourites, a persistent player (seek on the waveform, loop, volume) and WAV / MP3 downloads with the licence shown on every sound.
+- Built-in sounds are original: composed and synthesised in the browser from recipes (src/library/catalog.ts, music.ts, sfx.ts, synth.ts), so they are free to use. Waveforms come from a quick low-rate render; playback starts from the first seconds while the full piece renders.
+- Upload & manage: add music / effects with title, description, tags, category, cover, BPM and licence (with attribution). Uploads live in this browser (IndexedDB); a shared library for all visitors needs a server (e.g. a database + storage) — not part of this static site yet.
+- Free online sounds (src/library/online.ts): searches Creative Commons / public-domain music and effects from Freesound, Jamendo, Wikimedia Commons and more through the anonymous Openverse API (https://api.openverse.org/v1/audio/). Each result shows its licence; downloads come from the original host (WAV / MP3 / original) and the attribution text is copied. If a host blocks direct download the file opens in a new tab. "Commercial use allowed" filters to licences that permit paid work.
+- Pixabay: its licence forbids redistributing its sounds standalone and its API has no audio, so the app does not copy Pixabay's catalogue; "Find on Pixabay" opens the search there, and a downloaded file can be added with Upload & manage.

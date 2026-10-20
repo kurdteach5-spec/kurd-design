@@ -9,7 +9,8 @@ import { useLang } from '../../i18n';
 import { Logo } from '../dialogs/EditDialogs';
 import { pause as pauseMotion } from '../../motion/media/playback';
 import { stopAll as stopPodcast } from '../../podcast/player';
-import { LuImage, LuClapperboard, LuPodcast, LuSlidersVertical, LuLanguages, LuShieldCheck, LuWand, LuSmartphone, LuFilm, LuKeyboard, LuPlus, LuMinus, LuSparkles, LuUpload, LuScissors, LuSend } from 'react-icons/lu';
+import { stopLibrary } from '../../library/audio';
+import { LuImage, LuAudioLines, LuClapperboard, LuPodcast, LuSlidersVertical, LuLanguages, LuShieldCheck, LuWand, LuSmartphone, LuFilm, LuKeyboard, LuPlus, LuMinus, LuSparkles, LuUpload, LuScissors, LuSend } from 'react-icons/lu';
 
 const BG = '#07070d';
 const INK = '#f4f4f8';
@@ -67,11 +68,21 @@ const ArtMixer = (
   </svg>
 );
 
+const ArtSounds = (
+  <svg viewBox="0 0 220 130" className="w-full h-full" aria-hidden>
+    <rect x="18" y="20" width="184" height="90" rx="10" fill="#14161b" stroke="#252831" />
+    {Array.from({ length: 40 }, (_, i) => { const h = 8 + Math.abs(Math.sin(i * 0.55) * 26 + Math.sin(i * 1.7) * 9); return <rect key={i} x={30 + i * 4} y={58 - h / 2} width="2.4" height={h} rx="1" fill={i < 17 ? '#ff8a1f' : '#2f8cff'} opacity={i < 17 ? 1 : 0.8} />; })}
+    <rect x="30" y="88" width="160" height="4" rx="2" fill="#252831" /><rect x="30" y="88" width="68" height="4" rx="2" fill="#ff8a1f" />
+    <circle cx="186" cy="34" r="9" fill="#ff8a1f" /><path d="M183 30v8l7-4z" fill="#111" />
+  </svg>
+);
+
 const SECTIONS: Section[] = [
   { id: 'design', name: 'Design', color: '#f2b233', icon: <LuImage size={18} />, line: 'Photo editing and graphic design with layers.', points: ['Layers, masks, text and shapes', 'Filters and colour adjustments', 'Opens and saves PSD, PNG, JPG, PDF'], art: ArtDesign },
   { id: 'motion', name: 'Motion', color: '#2fae9c', icon: <LuClapperboard size={18} />, line: 'Animation and motion graphics on a timeline.', points: ['Keyframes with easing curves', 'Text, shapes, video and sound layers', 'Renders video and GIF'], art: ArtMotion },
   { id: 'podcast', name: 'Podcast', color: '#d4573f', icon: <LuPodcast size={18} />, line: 'Edits multicam podcasts and interviews for you.', points: ['Syncs every camera by sound', 'Cuts to whoever is speaking', 'Exports to Premiere and DaVinci'], art: ArtPodcast },
   { id: 'mixer', name: 'Mixer', color: '#7d9aff', icon: <LuSlidersVertical size={18} />, line: 'A live vision mixer for your cameras.', points: ['Program and preview, CUT and AUTO', 'Split screens, picture in picture, logos', 'Reels sizes and your own multiview'], art: ArtMixer },
+  { id: 'library', name: 'Sounds', color: '#ff8a1f', icon: <LuAudioLines size={18} />, line: 'Background music and sound effects library.', points: ['28 music and 17 sound effect categories', 'Waveform previews, search and filters', 'Download WAV or MP3, licence on every sound'], art: ArtSounds },
 ];
 
 
@@ -102,7 +113,7 @@ function SectionHead({ title, sub }: { title: string; sub: string }) {
   );
 }
 
-const FORMATS = ['PSD', 'PNG', 'JPG', 'SVG', 'PDF', 'MP4', 'MOV', 'WebM', 'GIF', 'MP3', 'WAV', 'Premiere Pro', 'DaVinci Resolve', 'Final Cut XML', 'Reels', 'TikTok', 'YouTube Shorts', 'Instagram'];
+const FORMATS = ['Music library', 'Sound effects', 'PSD', 'PNG', 'JPG', 'SVG', 'PDF', 'MP4', 'MOV', 'WebM', 'GIF', 'MP3', 'WAV', 'Premiere Pro', 'DaVinci Resolve', 'Final Cut XML', 'Reels', 'TikTok', 'YouTube Shorts', 'Instagram'];
 
 const FEATURES: { icon: ReactNode; title: string; text: string }[] = [
   { icon: <LuLanguages size={20} />, title: 'Kurdish, Arabic and English', text: 'The whole app speaks Sorani Kurdish, Arabic and English — switch at any time.' },
@@ -148,6 +159,7 @@ export function Launcher() {
   const scroller = useRef<HTMLDivElement>(null);
   const [scrolled, setScrolled] = useState(false);
   const open = (id: Workspace) => {
+    if (id !== 'library') stopLibrary();
     if (id !== 'motion') pauseMotion();
     if (id !== 'podcast' && id !== 'mixer') stopPodcast();
     if (id === 'design') useUI.setState({ showHome: true });
@@ -173,7 +185,7 @@ export function Launcher() {
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || document.querySelector('[role="dialog"]')) return;
-      const n = /^Digit[1-4]$/.test(e.code) ? Number(e.code.slice(-1)) : 0;
+      const n = /^Digit[1-5]$/.test(e.code) ? Number(e.code.slice(-1)) : 0;
       if (n) { e.preventDefault(); launchRef.current(SECTIONS[n - 1].id); }
     };
     window.addEventListener('keydown', h);
@@ -210,7 +222,7 @@ export function Launcher() {
           <h1 className="mt-7 mb-0 font-extrabold leading-[1.05] tracking-[-0.035em] text-[40px] sm:text-[64px] lg:text-[76px]" style={{ fontFamily: DISPLAY, backgroundImage: 'linear-gradient(180deg, #ffffff 30%, #b9b3d9 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
             Design, animate, edit and go live.
           </h1>
-          <p className="mt-6 mb-0 mx-auto max-w-[620px] text-[16px] sm:text-[18px] leading-relaxed" style={{ color: SUB }}>Four studios in one place: photo design, motion graphics, an automatic podcast editor and a live vision mixer — in Kurdish, Arabic and English.</p>
+          <p className="mt-6 mb-0 mx-auto max-w-[620px] text-[16px] sm:text-[18px] leading-relaxed" style={{ color: SUB }}>Five studios in one place: photo design, motion graphics, an automatic podcast editor, a live vision mixer and a music & sound effects library — in Kurdish, Arabic and English.</p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <button type="button" className="h-12 px-7 rounded-full text-[15px] font-semibold" style={{ background: GRAD, color: '#fff', boxShadow: '0 12px 40px -10px rgba(124,92,255,.8)' }} onClick={() => go('sections')}>Choose a section</button>
             {last && <button type="button" className="h-12 px-7 rounded-full text-[15px] font-semibold border hover:bg-white/5" style={{ borderColor: 'rgba(255,255,255,.18)', color: INK }} onClick={() => launch(last)}>{`Continue in ${SECTIONS.find((x) => x.id === last)?.name ?? ''}`}</button>}
@@ -220,7 +232,7 @@ export function Launcher() {
           </div>
         </div>
         {/* floating interface cards */}
-        <div className="relative max-w-[1180px] mx-auto mt-14 sm:mt-16 grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5" style={{ perspective: '1200px' }}>
+        <div className="relative max-w-[1180px] mx-auto mt-14 sm:mt-16 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-5" style={{ perspective: '1200px' }}>
           {SECTIONS.map((s, i) => (
             <div key={s.id} style={{ transform: `rotateX(8deg) translateY(${i % 2 ? 18 : 0}px)`, transformStyle: 'preserve-3d' }}>
               <button type="button" aria-label={`Open ${s.name}`} onClick={() => launch(s.id)} onMouseMove={tilt} onMouseLeave={untilt}
@@ -340,7 +352,7 @@ export function Launcher() {
               <input type="checkbox" className="w-4 h-4 accent-[#7c5cff]" checked={onStart} onChange={(e) => { setOnStart(e.target.checked); setLauncherOnStart(e.target.checked); }} />
               <span>Show this page when the site opens</span>
             </label>
-            <span>Press 1, 2, 3 or 4 to open a section.</span>
+            <span>Press 1 to 5 to open a section.</span>
             <span className="ms-auto">Your files stay on your computer: everything runs in the browser.</span>
           </div>
         </footer>
