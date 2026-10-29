@@ -10,7 +10,7 @@ import { Logo } from '../dialogs/EditDialogs';
 import { pause as pauseMotion } from '../../motion/media/playback';
 import { stopAll as stopPodcast } from '../../podcast/player';
 import { stopLibrary } from '../../library/audio';
-import { LuImage, LuAudioLines, LuClapperboard, LuPodcast, LuSlidersVertical, LuLanguages, LuShieldCheck, LuWand, LuSmartphone, LuFilm, LuKeyboard, LuPlus, LuMinus, LuSparkles, LuUpload, LuScissors, LuSend, LuNewspaper } from 'react-icons/lu';
+import { LuImage, LuAudioLines, LuClapperboard, LuPodcast, LuSlidersVertical, LuLanguages, LuShieldCheck, LuWand, LuSmartphone, LuFilm, LuKeyboard, LuPlus, LuMinus, LuSparkles, LuUpload, LuScissors, LuSend, LuNewspaper, LuLayoutDashboard } from 'react-icons/lu';
 
 const BG = '#07070d';
 const INK = '#f4f4f8';
@@ -92,12 +92,23 @@ const ArtPosts = (
   </svg>
 );
 
+const ArtSplit = (
+  <svg viewBox="0 0 220 130" className="w-full h-full" aria-hidden>
+    <defs><linearGradient id="spg" x1="0" y1="0" x2="220" y2="130" gradientUnits="userSpaceOnUse"><stop stopColor="#2a0a63" /><stop offset="1" stopColor="#7b1fd6" /></linearGradient></defs>
+    <rect x="14" y="14" width="192" height="108" rx="8" fill="url(#spg)" />
+    <rect x="20" y="30" width="40" height="70" rx="3" fill="#7c5cff" /><rect x="63" y="30" width="86" height="70" rx="3" fill="#22d3ee" />
+    <rect x="152" y="30" width="48" height="34" rx="3" fill="#cbd5e1" /><rect x="152" y="66" width="48" height="34" rx="3" fill="#cbd5e1" />
+    <rect x="20" y="106" width="180" height="8" rx="2" fill="#ffffff55" />
+  </svg>
+);
+
 const SECTIONS: Section[] = [
   { id: 'design', name: 'Design', color: '#f2b233', icon: <LuImage size={18} />, line: 'Photo editing and graphic design with layers.', points: ['Layers, masks, text and shapes', 'Filters and colour adjustments', 'Opens and saves PSD, PNG, JPG, PDF'], art: ArtDesign },
   { id: 'motion', name: 'Motion', color: '#2fae9c', icon: <LuClapperboard size={18} />, line: 'Animation and motion graphics on a timeline.', points: ['Keyframes with easing curves', 'Text, shapes, video and sound layers', 'Renders video and GIF'], art: ArtMotion },
   { id: 'podcast', name: 'Podcast', color: '#d4573f', icon: <LuPodcast size={18} />, line: 'Edits multicam podcasts and interviews for you.', points: ['Syncs every camera by sound', 'Cuts to whoever is speaking', 'Exports to Premiere and DaVinci'], art: ArtPodcast },
   { id: 'mixer', name: 'Mixer', color: '#7d9aff', icon: <LuSlidersVertical size={18} />, line: 'A live vision mixer for your cameras.', points: ['Program and preview, CUT and AUTO', 'Split screens, picture in picture, logos', 'Reels sizes and your own multiview'], art: ArtMixer },
   { id: 'library', name: 'Sounds', color: '#ff8a1f', icon: <LuAudioLines size={18} />, line: 'Background music and sound effects library.', points: ['28 music and 17 sound effect categories', 'Waveform previews, search and filters', 'Download WAV or MP3, licence on every sound'], art: ArtSounds },
+  { id: 'split', name: 'Split Screen', color: '#22d3ee', icon: <LuLayoutDashboard size={18} />, line: 'TV split screens with many windows, ready in one click.', points: ['Hundreds of layouts for 1 to 18 windows', 'Your own area on the 1920×1080 screen', 'Pictures, videos or cameras in the windows'], art: ArtSplit },
   { id: 'posts', name: 'Auto Posts', color: '#ff4d6d', icon: <LuNewspaper size={18} />, line: 'Every new post of a profile you follow becomes your design.', points: ['Follow feeds, Bluesky or Mastodon profiles', 'Your style: layout, colours, background, logo', 'A notification and a ready design for each post'], art: ArtPosts },
 ];
 
@@ -201,7 +212,7 @@ export function Launcher() {
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || document.querySelector('[role="dialog"]')) return;
-      const n = /^Digit[1-6]$/.test(e.code) ? Number(e.code.slice(-1)) : 0;
+      const n = /^Digit[1-7]$/.test(e.code) ? Number(e.code.slice(-1)) : 0;
       if (n) { e.preventDefault(); launchRef.current(SECTIONS[n - 1].id); }
     };
     window.addEventListener('keydown', h);
@@ -238,7 +249,7 @@ export function Launcher() {
           <h1 className="mt-7 mb-0 font-extrabold leading-[1.05] tracking-[-0.035em] text-[40px] sm:text-[64px] lg:text-[76px]" style={{ fontFamily: DISPLAY, backgroundImage: 'linear-gradient(180deg, #ffffff 30%, #b9b3d9 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
             Design, animate, edit and go live.
           </h1>
-          <p className="mt-6 mb-0 mx-auto max-w-[620px] text-[16px] sm:text-[18px] leading-relaxed" style={{ color: SUB }}>Six studios in one place: photo design, motion graphics, an automatic podcast editor, a live vision mixer, a music & sound effects library and automatic post designs — in Kurdish, Arabic and English.</p>
+          <p className="mt-6 mb-0 mx-auto max-w-[620px] text-[16px] sm:text-[18px] leading-relaxed" style={{ color: SUB }}>Seven studios in one place: photo design, motion graphics, an automatic podcast editor, a live vision mixer, a music & sound effects library, TV split screens and automatic post designs — in Kurdish, Arabic and English.</p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <button type="button" className="h-12 px-7 rounded-full text-[15px] font-semibold" style={{ background: GRAD, color: '#fff', boxShadow: '0 12px 40px -10px rgba(124,92,255,.8)' }} onClick={() => go('sections')}>Choose a section</button>
             {last && <button type="button" className="h-12 px-7 rounded-full text-[15px] font-semibold border hover:bg-white/5" style={{ borderColor: 'rgba(255,255,255,.18)', color: INK }} onClick={() => launch(last)}>{`Continue in ${SECTIONS.find((x) => x.id === last)?.name ?? ''}`}</button>}
@@ -248,7 +259,7 @@ export function Launcher() {
           </div>
         </div>
         {/* floating interface cards */}
-        <div className="relative max-w-[1180px] mx-auto mt-14 sm:mt-16 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5" style={{ perspective: '1200px' }}>
+        <div className="relative max-w-[1180px] mx-auto mt-14 sm:mt-16 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4 sm:gap-5" style={{ perspective: '1200px' }}>
           {SECTIONS.map((s, i) => (
             <div key={s.id} style={{ transform: `rotateX(8deg) translateY(${i % 2 ? 18 : 0}px)`, transformStyle: 'preserve-3d' }}>
               <button type="button" aria-label={`Open ${s.name}`} onClick={() => launch(s.id)} onMouseMove={tilt} onMouseLeave={untilt}

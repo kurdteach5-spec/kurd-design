@@ -2,9 +2,9 @@
 // the multicam podcast editor (Podcast) or the live vision mixer (Mixer).
 import { create } from './createStore';
 
-export type Workspace = 'design' | 'motion' | 'podcast' | 'mixer' | 'library' | 'posts';
+export type Workspace = 'design' | 'motion' | 'podcast' | 'mixer' | 'library' | 'posts' | 'split';
 const KEY = 'kurd-design-workspace';
-const initial = (): Workspace => { try { const v = localStorage.getItem(KEY); return v === 'motion' || v === 'podcast' || v === 'mixer' || v === 'library' || v === 'posts' ? v : 'design'; } catch { return 'design'; } };
+const initial = (): Workspace => { try { const v = localStorage.getItem(KEY); return v === 'motion' || v === 'podcast' || v === 'mixer' || v === 'library' || v === 'posts' || v === 'split' ? v : 'design'; } catch { return 'design'; } };
 
 const LAUNCH_KEY = 'kurd-design-launcher';
 /** the start screen with the four sections is shown when the site opens (unless switched off) */

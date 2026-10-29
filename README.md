@@ -197,3 +197,12 @@ Paste a profile link and every new post becomes a design in your own style (src/
 - Your own size (any width × height, e.g. 1080 × 1920, or the size of your background picture) and a **post area**: a box you drag on the preview (or type in px) — the text, picture and name always stay inside it (top / middle / bottom), long posts get smaller. Save a style under a name (My styles) and use it for any profile.
 - Styles per profile: post card / quote / news headline, 1:1, 4:5, 9:16, 16:9, colour / gradient / picture background, card, fonts (incl. Kurdish/Arabic), colours, verified badge, logo and page name. Kurdish/Arabic text is drawn right-to-left.
 - Everything is kept in this browser (IndexedDB). Getting posts while the site is closed (phone push) would need an always-on server job, which is not part of this site.
+
+### Split Screen (7th section)
+TV split screens ("windows") like news channels (src/split/).
+- Pick how many windows you need (1–18) and every ready layout for that number is shown — about 450 in all: equal grids (2–5 rows, stretched or centred), side by side, stacked, a big presenter left / right, big report on top with strips, the report in the middle with people on both sides (AVA style), presenter + report + guests, two presenters, mosaics with one or two double-size windows, L-shapes, picture in picture.
+- Screen size 1920 × 1080 (or 4K, 720p, vertical, square, any size) and a **windows area**: the part of the screen the windows must stay in (presets like "TV band", or drag it / type it in px). Every layout fits inside it.
+- Look: space between windows, round corners, border, glow, background (gradient, colour, your studio picture or see-through), names on the windows (bar colour, text colour, size), colours of empty windows.
+- Click a window to put a picture, a video or a live camera in it (or drop a file on it) and to write its name. "Move windows" to drag / resize windows, add or remove windows, and save your own layouts.
+- Export: the screen picture (PNG), the frame with see-through windows (PNG with transparency, to put over your cameras in vMix, OBS, Premiere or the Vision Mixer) and the window positions in pixels (JSON).
+
