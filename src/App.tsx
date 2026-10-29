@@ -22,7 +22,9 @@ import { MotionWorkspace } from './motion/ui/MotionWorkspace';
 import { MotionMenuBar } from './motion/ui/MotionMenuBar';
 import { importFiles as importMotionFiles } from './motion/actions';
 import { pause as pauseMotion } from './motion/media/playback';
-import { LuImage, LuClapperboard, LuPodcast, LuSlidersVertical, LuLayoutGrid, LuAudioLines } from 'react-icons/lu';
+import { LuImage, LuClapperboard, LuPodcast, LuSlidersVertical, LuLayoutGrid, LuAudioLines, LuNewspaper } from 'react-icons/lu';
+import { PostsWorkspace } from './posts/ui/PostsWorkspace';
+import { startPolling } from './posts/poller';
 import { LibraryWorkspace } from './library/ui/LibraryWorkspace';
 import { stopLibrary } from './library/audio';
 import { useUI } from './state/uiStore';
@@ -39,6 +41,7 @@ const WORKSPACES = [
   { id: 'podcast', label: 'Podcast', short: 'Podcast', color: '#e2674f', Icon: LuPodcast, tip: 'Multicam podcast & interview editing' },
   { id: 'mixer', label: 'Vision Mixer', short: 'Mixer', color: '#7d9aff', Icon: LuSlidersVertical, tip: 'Live vision mixer (switcher) for the podcast cameras' },
   { id: 'library', label: 'Sound Library', short: 'Sounds', color: '#ff8a1f', Icon: LuAudioLines, tip: 'Background music and sound effects' },
+  { id: 'posts', label: 'Auto Posts', short: 'Posts', color: '#ff4d6d', Icon: LuNewspaper, tip: 'Turns the posts of profiles you follow into your designs' },
 ] as const;
 
 export function App() {
@@ -67,6 +70,7 @@ export function App() {
     const leave = (e: DragEvent) => { if (!e.relatedTarget) useUI.setState({ dropActive: false }); };
     window.addEventListener('dragover', over); window.addEventListener('drop', drop); window.addEventListener('dragleave', leave);
     startAutosave();
+    void startPolling();
     void checkRecovery();
     const onResize = () => { if (window.innerWidth < 1100 && useUI.getState().sidebarMode === 'docked') useUI.setState({ sidebarMode: 'rail' }); };
     window.addEventListener('resize', onResize);
@@ -102,10 +106,10 @@ export function App() {
             </span>
           </>
         ); })()}
-        <div className="h-full py-[3px] min-w-0 flex-1 overflow-x-auto overflow-y-hidden no-scrollbar">{mode === 'motion' ? <MotionMenuBar /> : mode === 'podcast' ? <div className="h-full hidden md:flex items-center px-2 text-xs text-muted whitespace-nowrap">Multicam podcast editor · automatic cuts</div> : mode === 'mixer' ? <div className="h-full hidden md:flex items-center px-2 text-xs text-muted whitespace-nowrap">Vision mixer · live switching, keys, SuperSource, multiview</div> : mode === 'library' ? <div className="h-full hidden md:flex items-center px-2 text-xs text-muted whitespace-nowrap">Background music & sound effects · preview, search, download</div> : <MenuBar />}</div>
+        <div className="h-full py-[3px] min-w-0 flex-1 overflow-x-auto overflow-y-hidden no-scrollbar">{mode === 'motion' ? <MotionMenuBar /> : mode === 'podcast' ? <div className="h-full hidden md:flex items-center px-2 text-xs text-muted whitespace-nowrap">Multicam podcast editor · automatic cuts</div> : mode === 'mixer' ? <div className="h-full hidden md:flex items-center px-2 text-xs text-muted whitespace-nowrap">Vision mixer · live switching, keys, SuperSource, multiview</div> : mode === 'library' ? <div className="h-full hidden md:flex items-center px-2 text-xs text-muted whitespace-nowrap">Background music & sound effects · preview, search, download</div> : mode === 'posts' ? <div className="h-full hidden md:flex items-center px-2 text-xs text-muted whitespace-nowrap">Follow profiles · every new post becomes your design</div> : <MenuBar />}</div>
         <div className="h-full shrink-0"><LanguageMenu /></div>
       </header>
-      {mode === 'library' ? <div className="min-h-0 min-w-0" style={{ gridRow: '2 / 5' }}><ErrorBoundary label="sound library"><LibraryWorkspace /></ErrorBoundary></div> : mode === 'podcast' ? <div className="min-h-0 min-w-0" style={{ gridRow: '2 / 5' }}><PodcastWorkspace /></div> : mode === 'mixer' ? <div className="min-h-0 min-w-0" style={{ gridRow: '2 / 5' }}><MixerWorkspace /></div> : mode === 'motion' ? <div className="min-h-0 min-w-0" style={{ gridRow: '2 / 5' }}><MotionWorkspace /></div> : <>
+      {mode === 'posts' ? <div className="min-h-0 min-w-0" style={{ gridRow: '2 / 5' }}><ErrorBoundary label="auto posts"><PostsWorkspace /></ErrorBoundary></div> : mode === 'library' ? <div className="min-h-0 min-w-0" style={{ gridRow: '2 / 5' }}><ErrorBoundary label="sound library"><LibraryWorkspace /></ErrorBoundary></div> : mode === 'podcast' ? <div className="min-h-0 min-w-0" style={{ gridRow: '2 / 5' }}><PodcastWorkspace /></div> : mode === 'mixer' ? <div className="min-h-0 min-w-0" style={{ gridRow: '2 / 5' }}><MixerWorkspace /></div> : mode === 'motion' ? <div className="min-h-0 min-w-0" style={{ gridRow: '2 / 5' }}><MotionWorkspace /></div> : <>
       <div className="bg-panel border-b border-line min-w-0 overflow-x-auto overflow-y-hidden no-scrollbar">
         {home ? <div className="h-full flex items-center px-3 text-muted">Create or open a document to start editing.</div> : <ErrorBoundary label="options bar"><OptionsBar /></ErrorBoundary>}
       </div>

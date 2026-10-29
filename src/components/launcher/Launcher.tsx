@@ -10,7 +10,7 @@ import { Logo } from '../dialogs/EditDialogs';
 import { pause as pauseMotion } from '../../motion/media/playback';
 import { stopAll as stopPodcast } from '../../podcast/player';
 import { stopLibrary } from '../../library/audio';
-import { LuImage, LuAudioLines, LuClapperboard, LuPodcast, LuSlidersVertical, LuLanguages, LuShieldCheck, LuWand, LuSmartphone, LuFilm, LuKeyboard, LuPlus, LuMinus, LuSparkles, LuUpload, LuScissors, LuSend } from 'react-icons/lu';
+import { LuImage, LuAudioLines, LuClapperboard, LuPodcast, LuSlidersVertical, LuLanguages, LuShieldCheck, LuWand, LuSmartphone, LuFilm, LuKeyboard, LuPlus, LuMinus, LuSparkles, LuUpload, LuScissors, LuSend, LuNewspaper } from 'react-icons/lu';
 
 const BG = '#07070d';
 const INK = '#f4f4f8';
@@ -77,12 +77,28 @@ const ArtSounds = (
   </svg>
 );
 
+const ArtPosts = (
+  <svg viewBox="0 0 220 130" className="w-full h-full" aria-hidden>
+    <rect x="16" y="22" width="78" height="86" rx="10" fill="#14161b" stroke="#252831" />
+    <circle cx="32" cy="38" r="8" fill="#ff4d6d" /><rect x="44" y="33" width="38" height="5" rx="2.5" fill="#cfd3da" /><rect x="44" y="41" width="24" height="4" rx="2" fill="#5d6372" />
+    {[0, 1, 2, 3].map((i) => <rect key={i} x="26" y={56 + i * 10} width={i === 3 ? 34 : 58} height="5" rx="2.5" fill="#9298a6" />)}
+    <path d="M102 65h18m-6-7 7 7-7 7" stroke="#ff4d6d" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    <rect x="130" y="14" width="76" height="102" rx="10" fill="url(#pg)" />
+    <defs><linearGradient id="pg" x1="130" y1="14" x2="206" y2="116" gradientUnits="userSpaceOnUse"><stop stopColor="#7c5cff" /><stop offset="1" stopColor="#ff4d6d" /></linearGradient></defs>
+    <rect x="138" y="26" width="60" height="62" rx="7" fill="#fff" />
+    <circle cx="149" cy="37" r="6" fill="#ff4d6d" /><rect x="159" y="33" width="30" height="4" rx="2" fill="#0f1419" />
+    {[0, 1, 2].map((i) => <rect key={i} x="145" y={52 + i * 9} width={i === 2 ? 28 : 46} height="5" rx="2.5" fill="#0f1419" />)}
+    <rect x="160" y="98" width="38" height="8" rx="4" fill="#ffffffcc" />
+  </svg>
+);
+
 const SECTIONS: Section[] = [
   { id: 'design', name: 'Design', color: '#f2b233', icon: <LuImage size={18} />, line: 'Photo editing and graphic design with layers.', points: ['Layers, masks, text and shapes', 'Filters and colour adjustments', 'Opens and saves PSD, PNG, JPG, PDF'], art: ArtDesign },
   { id: 'motion', name: 'Motion', color: '#2fae9c', icon: <LuClapperboard size={18} />, line: 'Animation and motion graphics on a timeline.', points: ['Keyframes with easing curves', 'Text, shapes, video and sound layers', 'Renders video and GIF'], art: ArtMotion },
   { id: 'podcast', name: 'Podcast', color: '#d4573f', icon: <LuPodcast size={18} />, line: 'Edits multicam podcasts and interviews for you.', points: ['Syncs every camera by sound', 'Cuts to whoever is speaking', 'Exports to Premiere and DaVinci'], art: ArtPodcast },
   { id: 'mixer', name: 'Mixer', color: '#7d9aff', icon: <LuSlidersVertical size={18} />, line: 'A live vision mixer for your cameras.', points: ['Program and preview, CUT and AUTO', 'Split screens, picture in picture, logos', 'Reels sizes and your own multiview'], art: ArtMixer },
   { id: 'library', name: 'Sounds', color: '#ff8a1f', icon: <LuAudioLines size={18} />, line: 'Background music and sound effects library.', points: ['28 music and 17 sound effect categories', 'Waveform previews, search and filters', 'Download WAV or MP3, licence on every sound'], art: ArtSounds },
+  { id: 'posts', name: 'Auto Posts', color: '#ff4d6d', icon: <LuNewspaper size={18} />, line: 'Every new post of a profile you follow becomes your design.', points: ['Follow feeds, Bluesky or Mastodon profiles', 'Your style: layout, colours, background, logo', 'A notification and a ready design for each post'], art: ArtPosts },
 ];
 
 
@@ -185,7 +201,7 @@ export function Launcher() {
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || document.querySelector('[role="dialog"]')) return;
-      const n = /^Digit[1-5]$/.test(e.code) ? Number(e.code.slice(-1)) : 0;
+      const n = /^Digit[1-6]$/.test(e.code) ? Number(e.code.slice(-1)) : 0;
       if (n) { e.preventDefault(); launchRef.current(SECTIONS[n - 1].id); }
     };
     window.addEventListener('keydown', h);
@@ -222,7 +238,7 @@ export function Launcher() {
           <h1 className="mt-7 mb-0 font-extrabold leading-[1.05] tracking-[-0.035em] text-[40px] sm:text-[64px] lg:text-[76px]" style={{ fontFamily: DISPLAY, backgroundImage: 'linear-gradient(180deg, #ffffff 30%, #b9b3d9 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
             Design, animate, edit and go live.
           </h1>
-          <p className="mt-6 mb-0 mx-auto max-w-[620px] text-[16px] sm:text-[18px] leading-relaxed" style={{ color: SUB }}>Five studios in one place: photo design, motion graphics, an automatic podcast editor, a live vision mixer and a music & sound effects library — in Kurdish, Arabic and English.</p>
+          <p className="mt-6 mb-0 mx-auto max-w-[620px] text-[16px] sm:text-[18px] leading-relaxed" style={{ color: SUB }}>Six studios in one place: photo design, motion graphics, an automatic podcast editor, a live vision mixer, a music & sound effects library and automatic post designs — in Kurdish, Arabic and English.</p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
             <button type="button" className="h-12 px-7 rounded-full text-[15px] font-semibold" style={{ background: GRAD, color: '#fff', boxShadow: '0 12px 40px -10px rgba(124,92,255,.8)' }} onClick={() => go('sections')}>Choose a section</button>
             {last && <button type="button" className="h-12 px-7 rounded-full text-[15px] font-semibold border hover:bg-white/5" style={{ borderColor: 'rgba(255,255,255,.18)', color: INK }} onClick={() => launch(last)}>{`Continue in ${SECTIONS.find((x) => x.id === last)?.name ?? ''}`}</button>}
@@ -232,7 +248,7 @@ export function Launcher() {
           </div>
         </div>
         {/* floating interface cards */}
-        <div className="relative max-w-[1180px] mx-auto mt-14 sm:mt-16 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-5" style={{ perspective: '1200px' }}>
+        <div className="relative max-w-[1180px] mx-auto mt-14 sm:mt-16 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-5" style={{ perspective: '1200px' }}>
           {SECTIONS.map((s, i) => (
             <div key={s.id} style={{ transform: `rotateX(8deg) translateY(${i % 2 ? 18 : 0}px)`, transformStyle: 'preserve-3d' }}>
               <button type="button" aria-label={`Open ${s.name}`} onClick={() => launch(s.id)} onMouseMove={tilt} onMouseLeave={untilt}
