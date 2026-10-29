@@ -3,7 +3,7 @@
 // move and resize windows to make your own; save them; export the screen or a see-through frame.
 import { useEffect, useMemo, useRef, useState, type ReactNode, type PointerEvent as RPointerEvent, type DragEvent as RDragEvent } from 'react';
 import { LAYOUTS, COUNTS, FAMILIES, type Box, type Layout } from '../layouts';
-import { useSplit, setStyle, chooseLayout, setBoxes, setContent, setLabel, saveMine, deleteMine, defaultStyle, areaPx, boxPx, defaultLabel, type Area, type SplitStyle } from '../store';
+import { useSplit, setStyle, chooseLayout, setBoxes, setContent, setLabel, saveMine, deleteMine, defaultStyle, areaPx, boxPx, defaultLabel, slantPoints, circleOf, goodLayout, type Area, type SplitStyle } from '../store';
 import { renderSplit, toBlob } from '../render';
 import { saveBlob } from '../../file-system/exporters';
 import { toast, toastError } from '../../state/uiStore';
@@ -79,18 +79,29 @@ function Thumb({ boxes, style, active }: { boxes: Box[]; style: SplitStyle; acti
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full block rounded-md" style={{ aspectRatio: `${W} / ${H}`, background: `linear-gradient(120deg, ${style.bg1}, ${style.bg2})`, outline: active ? `3px solid ${C.accent}` : 'none', outlineOffset: 2 }} aria-hidden>
       <rect x={A.x} y={A.y} width={A.w} height={A.h} fill="none" stroke="#ffffff33" strokeDasharray="18 12" strokeWidth={6} />
-      {boxes.map((b, i) => { const p = boxPx(b, { ...style, gap: Math.max(style.gap, 14) }); return <rect key={i} x={p.x} y={p.y} width={p.w} height={p.h} rx={Math.min(style.radius, 30)} fill={b.role === 'host' ? style.hostColor : b.role === 'main' ? style.mainColor : '#cbd5e1'} opacity={b.role === 'guest' ? 0.85 : 1} />; })}
+      {boxes.map((b, i) => {
+        const p = boxPx(b, { ...style, gap: Math.max(style.gap, 14) });
+        const fill = b.role === 'host' ? style.hostColor : b.role === 'main' ? style.mainColor : '#cbd5e1';
+        if (b.shape === 'circle') { const c = circleOf(p); return <circle key={i} cx={c.x + c.w / 2} cy={c.y + c.h / 2} r={c.w / 2} fill={fill} stroke="#fff" strokeWidth={8} />; }
+        const pts = slantPoints(b, p);
+        if (pts) return <polygon key={i} points={pts.map(([x, y]) => `${p.x + x},${p.y + y}`).join(' ')} fill={fill} opacity={b.role === 'guest' ? 0.85 : 1} />;
+        return <rect key={i} x={p.x} y={p.y} width={p.w} height={p.h} rx={Math.min(style.radius, 30)} fill={fill} opacity={b.role === 'guest' ? 0.85 : 1} stroke={b.float ? '#fff' : 'none'} strokeWidth={6} />;
+      })}
     </svg>
   );
 }
 
 function LayoutGallery() {
-  const { count, family, layout, style, mine } = useSplit();
-  const list = useMemo(() => [...mine, ...LAYOUTS].filter((l) => (count === 'all' || l.n === count) && (family === 'all' || l.family === family)), [count, family, mine]);
+  const { count, family, layout, style, mine, showAll } = useSplit();
+  const base = useMemo(() => [...mine, ...LAYOUTS].filter((l) => (count === 'all' || l.n === count) && (family === 'all' || l.family === family)), [count, family, mine]);
+  const list = useMemo(() => (showAll ? base : base.filter((l) => l.family === 'Mine' || goodLayout(l.boxes, style))), [base, showAll, style]);
+  const hidden = base.length - list.length;
   const groups = useMemo(() => { const m = new Map<string, Layout[]>(); for (const l of list) { const k = count === 'all' ? `${l.n}` : l.family; if (!m.has(k)) m.set(k, []); m.get(k)!.push(l); } return [...m.entries()]; }, [list, count]);
   return (
     <div className="p-3 pb-10">
-      <div className="text-[12px] mb-2" style={{ color: C.faint }}>{tr('{0} layouts', list.length)}{count !== 'all' ? ` · ${tr('{0} windows', count)}` : ''}</div>
+      <div className="text-[12px] mb-2 flex items-center gap-2" style={{ color: C.faint }}><span className="flex-1">{tr('{0} layouts', list.length)}{count !== 'all' ? ` · ${tr('{0} windows', count)}` : ''}</span>
+        {(hidden > 0 || showAll) && <button type="button" onClick={() => useSplit.setState({ showAll: !showAll })} className="underline" data-tip="Layouts with thin or small windows for this area are hidden">{showAll ? tr('Hide thin ones') : tr('+{0} thin ones', hidden)}</button>}
+      </div>
       {!list.length && <div className="text-[13px] py-8 text-center" style={{ color: C.sub }}>No layout of this kind for this number of windows.</div>}
       {groups.map(([g, ls]) => (
         <section key={g} className="mb-4">
@@ -211,21 +222,26 @@ function Stage() {
             {/* the area */}
             <div className="absolute pointer-events-none" style={{ left: A.x, top: A.y, width: A.w, height: A.h, outline: editArea ? 'none' : `${Math.max(1, 1.5 / scale)}px dashed rgba(255,255,255,0.18)` }} />
             {boxes.map((b, i) => {
-              const p = boxPx(b, style); const c = contents[i];
+              const p0 = boxPx(b, style); const p = b.shape === 'circle' ? circleOf(p0) : p0; const c = contents[i];
+              const pts = slantPoints(b, p);
+              const clip = pts ? `polygon(${pts.map(([x, y]) => `${x}px ${y}px`).join(', ')})` : undefined;
+              const rad: number | string = b.shape === 'circle' ? '50%' : style.radius;
               const col = b.role === 'host' ? style.hostColor : b.role === 'main' ? style.mainColor : style.guestColor;
               const sel = selected === i;
               return (
                 <div key={i} className="absolute" style={{ left: p.x, top: p.y, width: p.w, height: p.h, zIndex: b.float ? 2 : 1, cursor: editBoxes ? 'move' : 'pointer' }}
                   onPointerDown={(e) => { e.stopPropagation(); if (editBoxes) dragBox(e, i, 'move'); else useSplit.setState({ selected: i }); }}
                   onDragOver={(e) => { if (e.dataTransfer?.types.includes('Files')) e.preventDefault(); }} onDrop={(e) => onDrop(e, i)}>
-                  <div className="absolute inset-0 overflow-hidden" style={{ borderRadius: style.radius, background: `linear-gradient(135deg, ${col}, #0b0b16)`, boxShadow: style.glow ? `0 0 24px ${style.borderColor}` : undefined }}>
+                  <div className="absolute inset-0 overflow-hidden" style={{ borderRadius: rad, clipPath: clip, background: `linear-gradient(135deg, ${col}, #0b0b16)`, boxShadow: style.glow && !clip ? `0 0 24px ${style.borderColor}` : undefined }}>
                     {c?.kind === 'image' && <img src={c.url} alt="" draggable={false} ref={(el: HTMLImageElement | null) => { if (el) mediaEls.set(i, el); else mediaEls.delete(i); }} className="absolute inset-0 w-full h-full object-cover" />}
                     {(c?.kind === 'video' || c?.kind === 'camera') && <video key={c.url} autoPlay muted loop playsInline ref={(el: HTMLVideoElement | null) => { if (el) { mediaEls.set(i, el); if (c.stream && el.srcObject !== c.stream) el.srcObject = c.stream; } else mediaEls.delete(i); }} src={c.kind === 'video' ? c.url : undefined} className="absolute inset-0 w-full h-full object-cover" />}
                     {!c && <span className="absolute inset-0 flex flex-col items-center justify-center text-white/90 font-bold select-none" style={{ fontSize: Math.max(18, Math.min(p.w, p.h) * 0.16) }}>{i + 1}{p.h > 140 && <span className="text-white/60 font-medium mt-1" style={{ fontSize: Math.max(14, Math.min(p.w, p.h) * 0.06) }}>{tr('Drop a picture or video')}</span>}</span>}
                   </div>
-                  {style.borderW > 0 && <div className="absolute inset-0 pointer-events-none" style={{ borderRadius: style.radius, boxShadow: `inset 0 0 0 ${style.borderW}px ${style.borderColor}` }} />}
+                  {style.borderW > 0 && (pts
+                    ? <svg className="absolute inset-0 pointer-events-none overflow-visible" width={p.w} height={p.h}><polygon points={pts.map(([x, y]) => `${x},${y}`).join(' ')} fill="none" stroke={style.borderColor} strokeWidth={style.borderW * 2} style={{ clipPath: clip }} /></svg>
+                    : <div className="absolute inset-0 pointer-events-none" style={{ borderRadius: rad, boxShadow: `inset 0 0 0 ${style.borderW}px ${style.borderColor}` }} />)}
                   {style.labels && <Label text={(labels[i] ?? '').trim() || tr(defaultLabel(b, i, boxes))} st={style} w={p.w} h={p.h} />}
-                  {sel && <div className="absolute pointer-events-none" style={{ inset: -4 / scale, border: `${3 / scale}px solid ${C.cyan}`, borderRadius: style.radius }} />}
+                  {sel && <div className="absolute pointer-events-none" style={{ inset: -4 / scale, border: `${3 / scale}px solid ${C.cyan}`, borderRadius: rad }} />}
                   {sel && editBoxes && handles((e, m) => dragBox(e, i, m), C.cyan)}
                 </div>
               );

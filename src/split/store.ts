@@ -26,6 +26,8 @@ export interface SplitState {
   layout: Layout; boxes: Box[]; edited: boolean;
   style: SplitStyle; contents: (Content | null)[]; labels: string[];
   selected: number | null; editBoxes: boolean; editArea: boolean;
+  /** also list layouts whose windows are thin or small for the area */
+  showAll: boolean;
   mine: Layout[];
 }
 const KEY = 'sarwar-split-v1';
@@ -36,7 +38,7 @@ export const useSplit = create<SplitState>(() => ({
   count: saved.count ?? 4, family: 'all',
   layout: first, boxes: saved.boxes ?? first.boxes, edited: !!saved.boxes && JSON.stringify(saved.boxes) !== JSON.stringify(first.boxes),
   style: { ...defaultStyle(), ...(saved.style ?? {}) }, contents: [], labels: saved.labels ?? [],
-  selected: null, editBoxes: false, editArea: false, mine: saved.mine ?? [],
+  selected: null, editBoxes: false, editArea: false, showAll: false, mine: saved.mine ?? [],
 }));
 let t = 0;
 useSplit.subscribe((s) => {
@@ -81,7 +83,28 @@ export function boxPx(b: Box, st: SplitStyle) {
   if (b.float) return { x, y, w, h };
   const l = b.x > e ? g : 0, r = b.x + b.w < 1 - e ? g : 0, tp = b.y > e ? g : 0, bt = b.y + b.h < 1 - e ? g : 0;
   x += l; y += tp; w -= l + r; h -= tp + bt;
-  return { x, y, w: Math.max(1, w), h: Math.max(1, h) };
+  w = Math.max(1, w); h = Math.max(1, h);
+  if (b.fit) { const fw = Math.min(w, (h * 16) / 9), fh = (fw * 9) / 16; x += (w - fw) / 2; y += (h - fh) / 2; w = fw; h = fh; }
+  return { x, y, w, h };
+}
+/** the outline of a window inside its box (for slanted windows), as points relative to the box; null = a plain (or round) box */
+export function slantPoints(b: Box, p: { w: number; h: number }): [number, number][] | null {
+  if (b.shape !== 'slant') return null;
+  const e = 0.001, d = Math.min(p.h * 0.2, p.w * 0.3);
+  const li = b.x > e, ri = b.x + b.w < 1 - e;
+  return [[li ? d / 2 : 0, 0], [p.w + (ri ? d / 2 : 0), 0], [p.w - (ri ? d / 2 : 0), p.h], [li ? -d / 2 : 0, p.h]].map(([x, y]) => [Math.max(0, Math.min(p.w, x)), y]) as [number, number][];
+}
+/** a round window is a circle inside its box */
+export function circleOf(p: { x: number; y: number; w: number; h: number }) { const d = Math.min(p.w, p.h); return { x: p.x + (p.w - d) / 2, y: p.y + (p.h - d) / 2, w: d, h: d }; }
+/** windows that are too thin or too small for the area are hidden from the list */
+export function goodLayout(boxes: Box[], st: SplitStyle) {
+  const A = areaPx(st); const min = Math.max((70 * st.width) / 1920, Math.min(A.w, A.h) * 0.13);
+  return boxes.every((b) => {
+    let p = boxPx(b, st); if (b.shape === 'circle') p = circleOf(p);
+    const ar = p.w / p.h;
+    if (b.shape !== 'circle' && !b.fit && (ar < 0.55 || ar > 2.6)) return false;
+    return Math.min(p.w, p.h) >= min && (p.w * p.h) / (A.w * A.h) >= 0.012;
+  });
 }
 export const defaultLabel = (b: Box, i: number, boxes: Box[]) => {
   const same = boxes.filter((x) => x.role === b.role);

@@ -1,6 +1,6 @@
 // Draws the split screen as a picture: the whole frame with what is in the windows, or the frame alone with
 // see-through windows (to put over your cameras in vMix, OBS, Premiere or the Vision Mixer).
-import { areaPx, boxPx, defaultLabel, type Content, type SplitStyle } from './store';
+import { areaPx, boxPx, defaultLabel, slantPoints, circleOf, type Content, type SplitStyle } from './store';
 import type { Box } from './layouts';
 import { tr } from '../i18n';
 
@@ -34,10 +34,16 @@ export async function renderSplit(o: RenderOpts): Promise<HTMLCanvasElement> {
   const A = areaPx(st);
   ctx.save(); ctx.beginPath(); ctx.rect(A.x, A.y, A.w, A.h); ctx.clip();
   for (let i = 0; i < o.boxes.length; i++) {
-    const b = o.boxes[i]; const p = boxPx(b, st);
-    if (st.glow) { ctx.save(); ctx.shadowColor = st.borderColor; ctx.shadowBlur = 24; rr(ctx, p.x, p.y, p.w, p.h, st.radius); ctx.fillStyle = '#000'; ctx.fill(); ctx.restore(); }
-    ctx.save(); rr(ctx, p.x, p.y, p.w, p.h, st.radius); ctx.clip();
-    if (o.mode === 'frame') { ctx.clearRect(p.x - 1, p.y - 1, p.w + 2, p.h + 2); }
+    const b = o.boxes[i]; const p0 = boxPx(b, st); const p = b.shape === 'circle' ? circleOf(p0) : p0;
+    const pts = slantPoints(b, p);
+    const shape = (inset = 0) => {
+      if (b.shape === 'circle') { ctx.beginPath(); ctx.arc(p.x + p.w / 2, p.y + p.h / 2, p.w / 2 - inset, 0, Math.PI * 2); return; }
+      if (pts) { ctx.beginPath(); pts.forEach(([x, y], k) => (k ? ctx.lineTo(p.x + x, p.y + y) : ctx.moveTo(p.x + x, p.y + y))); ctx.closePath(); return; }
+      rr(ctx, p.x + inset, p.y + inset, p.w - inset * 2, p.h - inset * 2, Math.max(0, st.radius - inset));
+    };
+    if (st.glow) { ctx.save(); ctx.shadowColor = st.borderColor; ctx.shadowBlur = 24; shape(); ctx.fillStyle = '#000'; ctx.fill(); ctx.restore(); }
+    ctx.save(); shape(); ctx.clip();
+    if (o.mode === 'frame') { ctx.clearRect(p.x - 2, p.y - 2, p.w + 4, p.h + 4); }
     else {
       const el = o.media?.get(i); const c = o.contents[i];
       let drawn = false;
@@ -55,7 +61,7 @@ export async function renderSplit(o: RenderOpts): Promise<HTMLCanvasElement> {
       }
     }
     ctx.restore();
-    if (st.borderW > 0) { ctx.save(); ctx.lineWidth = st.borderW; ctx.strokeStyle = st.borderColor; rr(ctx, p.x + st.borderW / 2, p.y + st.borderW / 2, p.w - st.borderW, p.h - st.borderW, Math.max(0, st.radius - st.borderW / 2)); ctx.stroke(); ctx.restore(); }
+    if (st.borderW > 0) { ctx.save(); shape(); ctx.clip(); ctx.lineWidth = st.borderW * 2; ctx.strokeStyle = st.borderColor; shape(); ctx.stroke(); ctx.restore(); }
     if (st.labels) {
       const text = (o.labels[i] ?? '').trim() || tr(defaultLabel(b, i, o.boxes));
       const fs = Math.min(st.labelSize, p.h * 0.14, p.w * 0.08);

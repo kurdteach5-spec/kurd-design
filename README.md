@@ -199,8 +199,9 @@ Paste a profile link and every new post becomes a design in your own style (src/
 - Everything is kept in this browser (IndexedDB). Getting posts while the site is closed (phone push) would need an always-on server job, which is not part of this site.
 
 ### Split Screen (7th section)
-TV split screens ("windows") like news channels (src/split/).
+TV split screens ("windows") like news channels (src/split/). About 600 layouts with ideas from channels around the world; layouts whose windows would be thin or small for your area are hidden ("+N thin ones" shows them).
 - Pick how many windows you need (1–18) and every ready layout for that number is shown — about 450 in all: equal grids (2–5 rows, stretched or centred), side by side, stacked, a big presenter left / right, big report on top with strips, the report in the middle with people on both sides (AVA style), presenter + report + guests, two presenters, mosaics with one or two double-size windows, L-shapes, picture in picture.
+- Kinds: 16:9 windows (each window keeps the TV shape), interviews 60/40, debates (two sides with the presenter between), panels, slanted windows (like Arabic and Turkish news), bigger-middle triptychs, newsroom walls, round guest windows.
 - Screen size 1920 × 1080 (or 4K, 720p, vertical, square, any size) and a **windows area**: the part of the screen the windows must stay in (presets like "TV band", or drag it / type it in px). Every layout fits inside it.
 - Look: space between windows, round corners, border, glow, background (gradient, colour, your studio picture or see-through), names on the windows (bar colour, text colour, size), colours of empty windows.
 - Click a window to put a picture, a video or a live camera in it (or drop a file on it) and to write its name. "Move windows" to drag / resize windows, add or remove windows, and save your own layouts.

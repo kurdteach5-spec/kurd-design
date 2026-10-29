@@ -3,10 +3,20 @@
 // Every box is a fraction (0–1) of the area you choose on the 1920×1080 screen, so they never leave it.
 
 export type Role = 'host' | 'main' | 'guest';
-export interface Box { x: number; y: number; w: number; h: number; role: Role; float?: boolean }
+export interface Box {
+  x: number; y: number; w: number; h: number; role: Role;
+  /** drawn over the others (picture in picture) */
+  float?: boolean;
+  /** 'slant': the inner edges lean (like many Arabic and Turkish news channels); 'circle': a round window */
+  shape?: 'slant' | 'circle';
+  /** keeps a 16:9 window inside its place (the background shows around it) */
+  fit?: boolean;
+}
 export interface Layout { id: string; n: number; family: string; name: string; boxes: Box[] }
 
 const B = (x: number, y: number, w: number, h: number, role: Role = 'guest', float = false): Box => ({ x, y, w, h, role, ...(float ? { float } : {}) });
+const withShape = (boxes: Box[], shape: Box['shape']) => boxes.map((b) => ({ ...b, shape }));
+const fitted = (boxes: Box[]) => boxes.map((b) => ({ ...b, fit: true }));
 
 /** rows × cols, all equal */
 function grid(r: number, c: number, x = 0, y = 0, w = 1, h = 1, role: Role = 'guest'): Box[] {
@@ -120,6 +130,58 @@ function build(): Layout[] {
     for (let i = 0; i < r; i++) for (let j = 0; j < c; j++) if (!(i < 2 && j >= mid && j < mid + 2)) b2.push(B(j * cw, i * rh, cw, rh));
     if (mid > 0) add('Mosaic', `Mosaic ${c}×${r}, big in the middle`, b2);
   }
+  // ideas from news channels around the world
+  for (let n = 2; n <= 18; n++) {
+    // 16:9 windows (DW, France 24, BBC two-ways): every window keeps the TV shape
+    add('16:9 windows', '16:9 windows', fitted(fill(n, 0, 0, 1, 1, 'stretch')));
+    add('16:9 windows', '16:9 windows, centred rows', fitted(fill(n, 0, 0, 1, 1, 'center')));
+    if (n >= 3) add('16:9 windows', '16:9: big presenter and guests', fitted([B(0, 0, 0.58, 1, 'host'), ...fill(n - 1, 0.58, 0, 0.42, 1, 'stretch', 16 / 9 * 0.42)]));
+    if (n >= 3) add('16:9 windows', '16:9: big report and guests', fitted([B(0, 0, 1, 0.62, 'main'), ...fill(n - 1, 0, 0.62, 1, 0.38, 'center', 16 / 9 / 0.38)]));
+    if (n >= 4) add('16:9 windows', '16:9: two big, guests below', fitted([B(0, 0, 0.5, 0.6, 'host'), B(0.5, 0, 0.5, 0.6, 'main'), ...fill(n - 2, 0, 0.6, 1, 0.4, 'center', 16 / 9 / 0.4)]));
+    // slanted windows (Al Arabiya, Sky News Arabia, TRT)
+    if (n <= 5) add('Slanted', 'Slanted side by side', withShape(row(n, 0, 0, 1, 1), 'slant'));
+    if (n >= 3 && n <= 5) add('Slanted', 'Slanted, big presenter', withShape([B(0, 0, 0.44, 1, 'host'), ...row(n - 1, 0.44, 0, 0.56, 1)], 'slant'));
+    if (n >= 3 && n <= 5) add('Slanted', 'Slanted, report in the middle', withShape((() => { const l = Math.ceil((n - 1) / 2); const sides = (0.44 / (n - 1)); return [...row(l, 0, 0, sides * l, 1), B(sides * l, 0, 0.56, 1, 'main'), ...row(n - 1 - l, sides * l + 0.56, 0, 1 - sides * l - 0.56, 1)]; })(), 'slant'));
+    if (n >= 4 && n <= 10) add('Slanted', 'Slanted top, guests below', [...withShape(row(Math.min(3, n - 2), 0, 0, 1, 0.58, 'host'), 'slant'), ...fill(n - Math.min(3, n - 2), 0, 0.58, 1, 0.42, 'stretch', 16 / 9 / 0.42)]);
+    // debate: two big sides, the presenter between them (Fox, CNN debate nights)
+    if (n === 3) {
+      add('Debate', 'Debate: presenter in the middle', [B(0, 0, 0.36, 1), B(0.36, 0.22, 0.28, 0.78, 'host'), B(0.64, 0, 0.36, 1)]);
+      add('Debate', 'Debate: presenter on top', [B(0, 0.34, 0.5, 0.66), B(0.33, 0, 0.34, 0.34, 'host'), B(0.5, 0.34, 0.5, 0.66)]);
+    }
+    if (n >= 4 && n <= 9) add('Debate', 'Debate: two sides and a panel', [B(0, 0, 0.36, 1), ...fill(n - 2, 0.36, 0, 0.28, 1, 'stretch', 16 / 9 * 0.28), B(0.64, 0, 0.36, 1)]);
+    if (n >= 4 && n % 2 === 0 && n <= 12) add('Debate', 'Debate: two teams', [...fill(n / 2, 0, 0, 0.48, 1, 'stretch', 16 / 9 * 0.48), ...fill(n / 2, 0.52, 0, 0.48, 1, 'stretch', 16 / 9 * 0.48)]);
+    // interviews with one window bigger (Sky News, BBC)
+    if (n === 2) {
+      add('Interview', 'Interview 60 / 40', [B(0, 0, 0.6, 1, 'host'), B(0.6, 0, 0.4, 1)]);
+      add('Interview', 'Interview 40 / 60', [B(0, 0, 0.4, 1, 'host'), B(0.4, 0, 0.6, 1)]);
+      add('Interview', 'Interview, guest above presenter', [B(0, 0, 1, 0.62), B(0.3, 0.62, 0.4, 0.38, 'host')]);
+    }
+    // the bigger middle (Al Jazeera triptych)
+    if (n === 3 || n === 5) {
+      const mid = n === 3 ? 0.46 : 0.34; const side = (1 - mid) / (n - 1);
+      const boxes: Box[] = []; let x = 0;
+      for (let i = 0; i < n; i++) { const w = i === (n - 1) / 2 ? mid : side; boxes.push(B(x, i === (n - 1) / 2 ? 0 : 0.08, w, i === (n - 1) / 2 ? 1 : 0.84, i === (n - 1) / 2 ? 'main' : 'guest')); x += w; }
+      add('Triptych', n === 3 ? 'Three, bigger middle' : 'Five, bigger middle', boxes);
+    }
+    // newsroom wall: the report big at the top middle, people around and below (Euronews, NHK)
+    if (n >= 5 && n <= 13) {
+      const sides = 2, bottom = n - 1 - sides;
+      add('Newsroom wall', 'Report on top, people around', [B(0, 0, 0.22, 0.62), B(0.22, 0, 0.56, 0.62, 'main'), B(0.78, 0, 0.22, 0.62), ...row(bottom, 0, 0.62, 1, 0.38)]);
+    }
+    // panels with a bigger top row (Euronews, Al Jazeera panels)
+    if (n >= 6) add('Panel', 'Three big on top, guests below', [...row(3, 0, 0, 1, 0.5, 'host'), ...fill(n - 3, 0, 0.5, 1, 0.5, 'stretch', 16 / 9 * 2)]);
+    if (n >= 8) add('Panel', 'Four big on top, guests below', [...row(4, 0, 0, 1, 0.5, 'host'), ...fill(n - 4, 0, 0.5, 1, 0.5, 'stretch', 16 / 9 * 2)]);
+    if (n >= 7) add('Panel', 'Presenter and report on top, guest rows below', fitted([B(0, 0, 0.5, 0.5, 'host'), B(0.5, 0, 0.5, 0.5, 'main'), ...fill(n - 2, 0, 0.5, 1, 0.5, 'stretch', 16 / 9 * 2)]));
+    if (n >= 6) add('Panel', 'Big presenter, guests in two columns', [B(0, 0, 0.5, 1, 'host'), ...rows(n - 1, Math.ceil((n - 1) / 2), 0.5, 0, 0.5, 1)]);
+    if (n >= 9) add('Panel', 'Report centre, guests above and below', [...row(Math.ceil((n - 1) / 2), 0, 0, 1, 0.28), B(0.2, 0.28, 0.6, 0.44, 'main'), ...row(Math.floor((n - 1) / 2), 0, 0.72, 1, 0.28)]);
+    // round windows over the picture (talk shows, YouTube shows)
+    if (n >= 2 && n <= 6) {
+      const k = n - 1, d = Math.min(0.3, 0.9 / k);
+      add('Circles', 'Round guests on the picture', [B(0, 0, 1, 1, 'main'), ...Array.from({ length: k }, (_, i) => ({ ...B(0.5 - (k * d) / 2 + i * d + d * 0.06, 0.6, d * 0.88, 0.36, 'guest', true), shape: 'circle' as const }))]);
+      add('Circles', 'Round guests at the side', [B(0, 0, 0.72, 1, 'main'), ...Array.from({ length: k }, (_, i) => ({ ...B(0.74, i / k + 0.02, 0.24, 1 / k - 0.04, 'guest'), shape: 'circle' as const }))]);
+    }
+    if (n >= 3 && n <= 8) add('Circles', 'Round windows in a row', withShape(row(n, 0, 0.1, 1, 0.8), 'circle'));
+  }
   // two double-size windows in a grid
   for (let r = 2; r <= 5; r++) for (let c = 4; c <= 7; c++) {
     const n = r * c - 6; if (n < 4 || n > 18) continue;
@@ -140,7 +202,7 @@ function build(): Layout[] {
   // remove repeats, number them
   const seen = new Set<string>(); const out: Layout[] = [];
   for (const l of all) {
-    const sig = l.boxes.map((b) => [b.x, b.y, b.w, b.h].map((v) => Math.round(v * 1000)).join(',')).sort().join('|');
+    const sig = l.boxes.map((b) => [b.x, b.y, b.w, b.h].map((v) => Math.round(v * 1000)).join(',') + (b.shape ?? '') + (b.fit ? 'f' : '')).sort().join('|');
     if (seen.has(sig)) continue; seen.add(sig);
     out.push({ ...l, id: `${l.n}-${out.filter((x) => x.n === l.n).length + 1}` });
   }
@@ -149,4 +211,4 @@ function build(): Layout[] {
 
 export const LAYOUTS: Layout[] = build();
 export const COUNTS = [...new Set(LAYOUTS.map((l) => l.n))].sort((a, b) => a - b);
-export const FAMILIES = ['Grid', 'Columns', 'Rows', 'Big presenter', 'Big report', 'Centre stage', 'Two presenters', 'Picture in picture', 'Mosaic', 'L-shape', 'Full', 'Mine'];
+export const FAMILIES = ['Grid', '16:9 windows', 'Columns', 'Rows', 'Big presenter', 'Big report', 'Centre stage', 'Two presenters', 'Interview', 'Debate', 'Panel', 'Slanted', 'Triptych', 'Newsroom wall', 'Circles', 'Picture in picture', 'Mosaic', 'L-shape', 'Full', 'Mine'];
