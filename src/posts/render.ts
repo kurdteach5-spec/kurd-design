@@ -1,5 +1,5 @@
 // Draws a post as a design (canvas) in the profile's style: social card, big quote or news headline.
-import { SIZES, type Post, type Profile, type Template } from './store';
+import { sizeOf, type Post, type Profile, type Template } from './store';
 import { loadImage } from './sources';
 import { ensureFont, fontStack } from '../utils/fonts';
 
@@ -73,14 +73,22 @@ function ellipsize(ctx: CanvasRenderingContext2D, s: string, maxW: number) { if 
 
 export const postText = (p: Pick<Post, 'text' | 'textOverride'>) => (p.textOverride?.trim() ? p.textOverride : p.text).trim();
 
-export interface RenderInput { post: Pick<Post, 'text' | 'textOverride' | 'date' | 'images'>; profile: Pick<Profile, 'name' | 'handle' | 'avatar' | 'avatarAuto'>; tpl: Template }
+export interface RenderInput { post: Pick<Post, 'text' | 'textOverride' | 'date' | 'images'> & { mode?: Post['mode'] }; profile: Pick<Profile, 'name' | 'handle' | 'avatar' | 'avatarAuto'>; tpl: Template }
 
 /** draws the design at full size (scale < 1 for previews) */
 export async function renderPost({ post, profile, tpl }: RenderInput, scale = 1): Promise<HTMLCanvasElement> {
-  const { w: W0, h: H0 } = SIZES[tpl.size];
+  const { w: W0, h: H0 } = sizeOf(tpl);
   const cv = document.createElement('canvas'); cv.width = Math.round(W0 * scale); cv.height = Math.round(H0 * scale);
   const ctx = cv.getContext('2d')!; ctx.scale(scale, scale);
-  const W = W0, H = H0, u = W / 1080;
+  const W = W0, H = H0, uc = Math.min(W, H * 1.2) / 1080;
+  // the box the post stays in: your own area, or the whole design with a margin
+  const pad = 72 * uc;
+  const footerH = (tpl.logo || tpl.footer) && !tpl.area ? 96 * uc : 0;
+  const A = tpl.area
+    ? { x: tpl.area.x * W, y: tpl.area.y * H, w: Math.max(40, tpl.area.w * W), h: Math.max(40, tpl.area.h * H) }
+    : { x: pad, y: pad, w: W - pad * 2, h: H - pad * 2 - footerH };
+  // everything is sized to the box, so a small box gets a small post — never a post that spills out
+  const u = Math.min(A.w / 936, A.h / 700);
   const text = postText(post);
   // short posts are drawn bigger so the design is filled
   const grow = text.length < 90 ? 1.45 : text.length < 180 ? 1.2 : 1;
@@ -91,7 +99,8 @@ export async function renderPost({ post, profile, tpl }: RenderInput, scale = 1)
   const [bgImg, av, pic, logo] = await Promise.all([
     tpl.bgType === 'image' ? loadImage(tpl.bgImage) : null,
     tpl.showAvatar ? loadImage(profile.avatar || profile.avatarAuto) : null,
-    tpl.showImage && post.images[0] ? loadImage(post.images[0]) : null,
+    // per post: 'text' = text only, 'image' = with the picture; a post without text always shows its picture
+    (post.mode === 'text' ? !text : post.mode === 'image' || tpl.showImage || !text) && post.images[0] ? loadImage(post.images[0]) : null,
     loadImage(tpl.logo),
   ]);
   const F = (px: number, wgt = weight) => `${wgt} ${px}px ${fontStack(tpl.font)}`;
@@ -106,11 +115,11 @@ export async function renderPost({ post, profile, tpl }: RenderInput, scale = 1)
     if (bgImg) { cover(ctx, bgImg, 0, 0, W, H); if (tpl.bgDim > 0) { ctx.fillStyle = `rgba(0,0,0,${tpl.bgDim})`; ctx.fillRect(0, 0, W, H); } }
   }
 
-  const pad = 72 * u;
-  const footerH = (tpl.logo || tpl.footer ? 96 : 0) * u;
   const inner = tpl.cardOn ? 56 * u : 0;
-  const boxX = pad, boxW = W - pad * 2;
-  const maxH = H - pad * 2 - footerH;
+  const boxX = A.x, boxW = A.w;
+  const maxH = A.h;
+  const top = (h: number) => A.y + (tpl.vAlign === 'top' ? 0 : tpl.vAlign === 'bottom' ? maxH - h : (maxH - h) / 2);
+  ctx.save(); ctx.beginPath(); ctx.rect(A.x, A.y, A.w, A.h); ctx.clip();
   const cx = boxX + inner, cw = boxW - inner * 2;
   ctx.textBaseline = 'alphabetic';
   const dateStr = formatDate(post.date);
@@ -141,13 +150,13 @@ export async function renderPost({ post, profile, tpl }: RenderInput, scale = 1)
 
   if (tpl.layout === 'card') {
     const avD = 112 * u, headH = tpl.showAvatar || profile.name ? avD : 0, gap = 40 * u;
-    const picMax = pic ? Math.min(maxH * (text ? 0.46 : 0.75), cw * 0.75) : 0;
+    const picMax = pic ? Math.min(maxH * (!text ? 0.75 : text.length > 160 ? 0.34 : 0.46), cw * 0.75) : 0;
     const textMaxH = Math.max(0, maxH - inner * 2 - headH - gap - (pic ? picMax + gap : 0));
     const fit = text ? fitText(ctx, text, (px) => F(px), cw, textMaxH, tpl.textSize * grow * u, 22 * u) : { size: 0, lines: [] as string[], lh: 1.32 };
     const textH = fit.lines.length * fit.size * fit.lh;
     const contentH = headH + (text ? gap + textH : 0) + (pic ? gap + picMax : 0);
     const cardH = Math.min(maxH, contentH + inner * 2);
-    const y0 = pad + (maxH - cardH) / 2;
+    const y0 = top(cardH);
     drawCard(y0, cardH);
     let y = y0 + inner;
     nameRow(cx, y, avD, 44 * u, 32 * u, cw); y += headH;
@@ -164,7 +173,7 @@ export async function renderPost({ post, profile, tpl }: RenderInput, scale = 1)
     const textH = fit.lines.length * fit.size * fit.lh;
     const contentH = qSize * 0.55 + textH + gap * 2 + avD + (pic ? picH + gap : 0);
     const cardH = Math.min(maxH, contentH + inner * 2);
-    const y0 = pad + (maxH - cardH) / 2;
+    const y0 = top(cardH);
     drawCard(y0, cardH);
     let y = y0 + inner;
     ctx.font = `900 ${qSize}px ${fontStack('Georgia')}`; ctx.fillStyle = tpl.accent; ctx.direction = rtl ? 'rtl' : 'ltr';
@@ -187,7 +196,7 @@ export async function renderPost({ post, profile, tpl }: RenderInput, scale = 1)
     const textH = fit.lines.length * fit.size * fit.lh;
     const contentH = labelH + gap + textH + gap + avD + (pic ? picH + gap : 0);
     const cardH = Math.min(maxH, contentH + inner * 2);
-    const y0 = pad + (maxH - cardH) / 2;
+    const y0 = top(cardH);
     drawCard(y0, cardH);
     let y = y0 + inner;
     if (tpl.label) {
@@ -212,17 +221,18 @@ export async function renderPost({ post, profile, tpl }: RenderInput, scale = 1)
     nameRow(cx, y, avD, 38 * u, 28 * u, cw);
   }
 
-  // footer: logo + your text
+  ctx.restore();
+  // footer: logo + your text (placed on the design, outside your box)
   if (logo || tpl.footer) {
-    const fy = H - pad * 0.55 - footerH / 2;
-    const lh = tpl.logoSize * u, lw = logo ? (logo.naturalWidth / logo.naturalHeight) * lh : 0;
+    const fy = H - pad * 0.55 - 48 * uc;
+    const lh = tpl.logoSize * uc, lw = logo ? (logo.naturalWidth / logo.naturalHeight) * lh : 0;
     const left = tpl.logoPos === 'bl' || tpl.logoPos === 'tl', top = tpl.logoPos === 'tl' || tpl.logoPos === 'tr';
     if (logo) ctx.drawImage(logo, left ? pad : W - pad - lw, top ? pad * 0.45 : fy - lh / 2, lw, lh);
     if (tpl.footer) {
-      ctx.font = UI(30 * u, 600); ctx.fillStyle = tpl.footerColor;
+      ctx.font = UI(30 * uc, 600); ctx.fillStyle = tpl.footerColor;
       ctx.direction = RTL.test(tpl.footer) ? 'rtl' : 'ltr';
       const sameSide = !top && logo; ctx.textAlign = sameSide ? (left ? 'right' : 'left') : 'center';
-      ctx.fillText(tpl.footer, sameSide ? (left ? W - pad : pad) : W / 2, fy + 10 * u);
+      ctx.fillText(tpl.footer, sameSide ? (left ? W - pad : pad) : W / 2, fy + 10 * uc);
     }
   }
   return cv;

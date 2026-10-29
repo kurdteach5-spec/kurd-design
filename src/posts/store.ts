@@ -2,18 +2,24 @@
 // into a ready design in the profile's own style. Profiles and their posts are kept in this browser (IndexedDB).
 import { create } from '../state/createStore';
 
-export type SourceType = 'rss' | 'bluesky' | 'mastodon';
+export type SourceType = 'rss' | 'bluesky' | 'mastodon' | 'truth' | 'telegram' | 'youtube' | 'api';
 export type Layout = 'card' | 'quote' | 'headline';
-export type SizeKey = 'square' | 'portrait' | 'story' | 'landscape';
+export type SizeKey = 'square' | 'portrait' | 'story' | 'landscape' | 'custom';
 export const SIZES: Record<SizeKey, { w: number; h: number; label: string }> = {
   square: { w: 1080, h: 1080, label: 'Square 1:1' },
   portrait: { w: 1080, h: 1350, label: 'Portrait 4:5' },
   story: { w: 1080, h: 1920, label: 'Story 9:16' },
   landscape: { w: 1600, h: 900, label: 'Wide 16:9' },
+  custom: { w: 1080, h: 1920, label: 'Your size' },
 };
+/** a box inside the design (0–1 of the width / height) that the post always stays in */
+export interface Area { x: number; y: number; w: number; h: number }
+export const sizeOf = (t: Pick<Template, 'size' | 'customW' | 'customH'>) => (t.size === 'custom' ? { w: Math.max(200, Math.min(4000, Math.round(t.customW || 1080))), h: Math.max(200, Math.min(4000, Math.round(t.customH || 1920))) } : SIZES[t.size]);
 
 export interface Template {
-  layout: Layout; size: SizeKey;
+  layout: Layout; size: SizeKey; customW: number; customH: number;
+  /** the post stays inside this box; null = the whole design with a margin */
+  area: Area | null; vAlign: 'top' | 'center' | 'bottom';
   bgType: 'solid' | 'gradient' | 'image'; bg1: string; bg2: string; bgAngle: number; bgImage: string | null; bgDim: number;
   cardOn: boolean; cardColor: string; cardOpacity: number; radius: number;
   font: string; textSize: number; textColor: string; align: 'start' | 'center'; bold: boolean;
@@ -22,7 +28,7 @@ export interface Template {
   label: string; logo: string | null; logoPos: 'tl' | 'tr' | 'bl' | 'br'; logoSize: number; footer: string; footerColor: string;
 }
 export const defaultTemplate = (): Template => ({
-  layout: 'card', size: 'square',
+  layout: 'card', size: 'square', customW: 1080, customH: 1920, area: null, vAlign: 'center',
   bgType: 'gradient', bg1: '#1e1846', bg2: '#0b0a1f', bgAngle: 135, bgImage: null, bgDim: 0.35,
   cardOn: true, cardColor: '#ffffff', cardOpacity: 1, radius: 36,
   font: 'Inter', textSize: 52, textColor: '#0f1419', align: 'start', bold: false,
@@ -36,18 +42,28 @@ export interface Profile {
   source: { type: SourceType; value: string };
   /** uploaded photo (data URL) or the photo the source gives (URL) */
   avatar: string | null; avatarAuto: string | null;
+  /** minutes between checks (0.25 = every 15 seconds) */
   interval: number; template: Template;
+  /** how the posts were read the last time (e.g. 'trumpstruth.org') */
+  via?: string | null;
   lastChecked: number; lastError: string | null; checkedOnce: boolean; unread: number; createdAt: number;
 }
 export interface Post {
   id: string; profileId: string; text: string; url: string; date: number; images: string[];
+  videos?: string[];
+  /** 'text' makes a design without the post's picture */
+  mode?: 'image' | 'text';
   /** your own wording (e.g. a translation) used in the design instead of the original text */
   textOverride?: string; isNew?: boolean; seenAt: number;
 }
 
-export interface Settings { proxy: string; notify: boolean; autoDownload: boolean; format: 'png' | 'jpg' }
+export interface Settings {
+  proxy: string; notify: boolean; sound: boolean; autoDownload: boolean; autoPictures: boolean; format: 'png' | 'jpg';
+  /** ScrapeCreators API key (X, Facebook, Instagram, TikTok, Threads, Truth Social) */
+  apiKey: string;
+}
 const SETTINGS = 'sarwar-posts-settings';
-const readSettings = (): Settings => { const d: Settings = { proxy: '/api/feed', notify: true, autoDownload: false, format: 'png' }; try { return { ...d, ...JSON.parse(localStorage.getItem(SETTINGS) || '{}') }; } catch { return d; } };
+const readSettings = (): Settings => { const d: Settings = { proxy: '/api/feed', notify: true, sound: true, autoDownload: false, autoPictures: false, format: 'png', apiKey: '' }; try { return { ...d, ...JSON.parse(localStorage.getItem(SETTINGS) || '{}') }; } catch { return d; } };
 
 // ---------- IndexedDB ----------
 const DB = 'sarwar-posts'; const STORE = 'kv';
@@ -121,8 +137,11 @@ export function removeProfile(id: string) {
 export function mergePosts(id: string, incoming: Omit<Post, 'profileId' | 'seenAt'>[], markNew: boolean): Post[] {
   const cur = usePosts.getState().posts[id] ?? [];
   const known = new Set(cur.map((p) => p.id));
+  // the same post read from another place (e.g. the backup archive) has another id: match it by its words and time
+  const sig = (p: { text: string; date: number }) => p.text.replace(/\s+/g, ' ').trim().slice(0, 80).toLowerCase();
+  const same = (p: { text: string; date: number }) => { const k = sig(p); return !!k && cur.some((c) => sig(c) === k && Math.abs(c.date - p.date) < 15 * 60_000); };
   const now = Date.now();
-  const fresh: Post[] = incoming.filter((p) => !known.has(p.id)).map((p) => ({ ...p, profileId: id, seenAt: now, isNew: markNew }));
+  const fresh: Post[] = incoming.filter((p) => !known.has(p.id) && !same(p)).map((p) => ({ ...p, profileId: id, seenAt: now, isNew: markNew }));
   if (!fresh.length) return [];
   const all = [...fresh, ...cur].sort((a, b) => b.date - a.date).slice(0, MAX_POSTS);
   usePosts.setState((s) => ({ posts: { ...s.posts, [id]: all } }));
@@ -144,3 +163,14 @@ export function markSeen(profileId: string) {
   if (list.some((p) => p.isNew)) { usePosts.setState((s) => ({ posts: { ...s.posts, [profileId]: list.map((p) => (p.isNew ? { ...p, isNew: false } : p)) } })); void savePosts(profileId); }
 }
 export const totalUnread = (s: PostsState) => s.profiles.reduce((n, p) => n + (p.unread || 0), 0);
+
+// ---------- your own saved styles ----------
+export interface SavedStyle { id: string; name: string; tpl: Template; createdAt: number }
+export const useStyles = create<{ list: SavedStyle[]; loaded: boolean }>(() => ({ list: [], loaded: false }));
+export async function loadStyles() { if (useStyles.getState().loaded) return; useStyles.setState({ list: (await kvGet<SavedStyle[]>('styles')) ?? [], loaded: true }); }
+export function saveStyle(name: string, tpl: Template) {
+  const st: SavedStyle = { id: `s${Date.now().toString(36)}`, name: name.trim() || 'My style', tpl: { ...tpl }, createdAt: Date.now() };
+  useStyles.setState((s) => ({ list: [st, ...s.list] })); void kvSet('styles', useStyles.getState().list);
+  return st;
+}
+export function deleteStyle(id: string) { useStyles.setState((s) => ({ list: s.list.filter((x) => x.id !== id) })); void kvSet('styles', useStyles.getState().list); }
